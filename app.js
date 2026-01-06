@@ -1,170 +1,104 @@
-window.onload = function() {
-    // --- CONFIGURATION FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
-        authDomain: "urbex-map-b907d.firebaseapp.com",
-        projectId: "urbex-map-b907d",
-        storageBucket: "urbex-map-b907d.appspot.com",
-        messagingSenderId: "91725857148",
-        appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
-    };
+// --- 1. IMPORTATION DES FONCTIONS FIREBASE (Via CDN pour le navigateur) ---
+// Note : J'utilise les liens URL complets pour que ça marche directement sans installation complexe.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const adminEmail = "enzocomyn@protonmail.com";
-
-    // --- ELEMENTS HTML ---
-    const loginDiv = document.getElementById("login");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const mapDiv = document.getElementById("map");
-    const kmlDiv = document.getElementById("kmlContainer");
-    const loginError = document.getElementById("loginError");
-    let map;
-    let markers = []; // pour garder la référence des markers et docId
-
-    // --- AFFICHAGE INITIAL ---
-    loginDiv.style.display = "block";
-    logoutBtn.style.display = "none";
-    mapDiv.style.display = "none";
-    kmlDiv.style.display = "none";
-
-    // --- LOGIN ---
-    document.getElementById("loginBtn").addEventListener("click", function() {
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-
-        auth.signInWithEmailAndPassword(email, password)
-            .then(function(userCredential) {
-                const user = userCredential.user;
-
-                loginDiv.style.display = "none";
-                logoutBtn.style.display = "block"; // toujours visible
-                mapDiv.style.display = "block";
-
-                if(!map) map = initMap();
-
-                const isAdmin = user.email.trim().toLowerCase() === adminEmail.toLowerCase();
-
-                // Bouton KML pour admin
-                kmlDiv.style.display = isAdmin ? "block" : "none";
-                if(isAdmin) attachKmlListener();
-
-                loadSpots(isAdmin);
-            })
-            .catch(function(error) {
-                loginError.innerText = error.message;
-            });
-    });
-
-    // --- LOGOUT ---
-    logoutBtn.addEventListener("click", function() {
-        auth.signOut().then(function() {
-            loginDiv.style.display = "block";
-            logoutBtn.style.display = "none";
-            mapDiv.style.display = "none";
-            kmlDiv.style.display = "none";
-            clearMarkers();
-        });
-    });
-
-    // --- INITIALISER LA CARTE ---
-    function initMap() {
-        const mapInstance = L.map('map').setView([48.8566, 2.3522], 5);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(mapInstance);
-        return mapInstance;
-    }
-
-    // --- ATTACHER LE BOUTON KML ---
-    function attachKmlListener() {
-        const importBtn = document.getElementById("importKmlBtn");
-        importBtn.onclick = importKML;
-    }
-
-    // --- IMPORT KML ---
-    function importKML() {
-        const fileInput = document.getElementById("kmlFile");
-        if(fileInput.files.length === 0){
-            alert("Veuillez sélectionner un fichier KML");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e){
-            const spots = parseKML(e.target.result);
-            spots.forEach(function(spot){
-                db.collection("kml").add(spot);
-            });
-            alert("Import terminé : " + spots.length + " spots ajoutés");
-            loadSpots(true); // reload markers admin
-        };
-        reader.readAsText(fileInput.files[0]);
-    }
-
-    // --- PARSER KML ---
-    function parseKML(kmlText){
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(kmlText,"text/xml");
-        const placemarks = xmlDoc.getElementsByTagName("Placemark");
-        const spots = [];
-
-        for(let i=0;i<placemarks.length;i++){
-            const p = placemarks[i];
-            const name = p.getElementsByTagName("name")[0]?.textContent || "Spot";
-            const coordText = p.getElementsByTagName("coordinates")[0]?.textContent;
-            if(!coordText) continue;
-            const coords = coordText.trim().split(",");
-            if(coords.length < 2) continue;
-            const lon = parseFloat(coords[0]);
-            const lat = parseFloat(coords[1]);
-            if(isNaN(lat) || isNaN(lon)) continue;
-            spots.push({name: name, lat: lat, lon: lon});
-        }
-
-        return spots;
-    }
-
-    // --- CHARGER LES SPOTS ---
-    function loadSpots(isAdmin = false){
-        if(!map) return;
-        clearMarkers();
-
-        db.collection("kml").get().then(function(snapshot){
-            snapshot.forEach(function(doc){
-                const data = doc.data();
-                const marker = L.marker([data.lat, data.lon]).addTo(map);
-
-                let popupText = `<b>${data.name}</b><br>Lat: ${data.lat.toFixed(6)}, Lon: ${data.lon.toFixed(6)}`;
-                if(isAdmin){
-                    popupText += `<br><button onclick="deleteMarker('${doc.id}')">Supprimer</button>`;
-                }
-
-                marker.bindPopup(popupText);
-                markers.push({marker: marker, docId: doc.id});
-            });
-        });
-    }
-
-    // --- SUPPRIMER UN MARKER (admin) ---
-    window.deleteMarker = function(docId){
-        if(confirm("Supprimer ce spot ?")){
-            db.collection("kml").doc(docId).delete().then(function(){
-                loadSpots(true);
-            }).catch(function(err){
-                alert("Erreur suppression : " + err.message);
-            });
-        }
-    }
-
-    // --- SUPPRIMER TOUS LES MARKERS ---
-    function clearMarkers(){
-        markers.forEach(m => {
-            map.removeLayer(m.marker);
-        });
-        markers = [];
-    }
+// --- 2. TA CONFIGURATION FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
+  authDomain: "urbex-map-b907d.firebaseapp.com",
+  databaseURL: "https://urbex-map-b907d-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "urbex-map-b907d",
+  storageBucket: "urbex-map-b907d.firebasestorage.app",
+  messagingSenderId: "91725857148",
+  appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
 };
+
+// Initialisation de Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// --- 3. RÉCUPÉRATION DES ÉLÉMENTS HTML ---
+const loginForm = document.getElementById('login-form');       
+const emailInput = document.getElementById('email');           
+const passwordInput = document.getElementById('password');     
+const loginButton = document.getElementById('btn-login');      
+const logoutButton = document.getElementById('btn-logout');    
+const mapContainer = document.getElementById('map-container'); 
+
+// --- 4. GESTION DE L'ÉTAT (Connecté ou Pas ?) ---
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // --- L'UTILISATEUR EST CONNECTÉ ---
+    console.log("Utilisateur connecté :", user.email);
+    
+    // Interface : on cache le login, on montre la carte
+    if(loginForm) loginForm.style.display = 'none';
+    if(logoutButton) logoutButton.style.display = 'block';
+    if(mapContainer) mapContainer.style.display = 'block';
+
+    // On charge les données
+    chargerLesLieux();
+
+  } else {
+    // --- PERSONNE N'EST CONNECTÉ ---
+    console.log("Aucun utilisateur connecté.");
+
+    // Interface : on montre le login, on cache la carte
+    if(loginForm) loginForm.style.display = 'block';
+    if(logoutButton) logoutButton.style.display = 'none';
+    if(mapContainer) mapContainer.style.display = 'none';
+  }
+});
+
+// --- 5. FONCTION SE CONNECTER (Login uniquement) ---
+if (loginButton) {
+  loginButton.addEventListener('click', (e) => {
+    e.preventDefault(); 
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log("Connexion réussie !");
+      })
+      .catch((error) => {
+        console.error("Erreur de connexion :", error.message);
+        alert("Erreur : " + error.message);
+      });
+  });
+}
+
+// --- 6. FONCTION SE DÉCONNECTER ---
+if (logoutButton) {
+  logoutButton.addEventListener('click', () => {
+    signOut(auth).then(() => {
+      console.log("Déconnexion réussie");
+    }).catch((error) => {
+      console.error("Erreur déconnexion", error);
+    });
+  });
+}
+
+// --- 7. CHARGEMENT DES DONNÉES DEPUIS FIRESTORE ---
+async function chargerLesLieux() {
+  console.log("Chargement des lieux en cours...");
+  
+  try {
+    // Nouvelle syntaxe pour récupérer la collection "lieux"
+    const querySnapshot = await getDocs(collection(db, "lieux"));
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      console.log("Lieu trouvé :", data);
+      
+      // --- AJOUTE ICI TON CODE POUR LES MARQUEURS ---
+      // Exemple : L.marker([data.lat, data.lng]).addTo(map);
+    });
+  } catch (error) {
+    console.error("Erreur lors du chargement des lieux (Permissions ?) :", error);
+  }
+}
