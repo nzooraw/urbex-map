@@ -23,12 +23,13 @@ window.onload = function() {
     let map;
 
     // --- AFFICHAGE INITIAL ---
+    // Tout est masqué tant que l'utilisateur n'a pas cliqué sur login
     loginDiv.style.display = "block";
     logoutBtn.style.display = "none";
     mapDiv.style.display = "none";
     kmlDiv.style.display = "none";
 
-    // --- LOGIN ---
+    // --- LOGIN MANUEL ---
     document.getElementById("loginBtn").addEventListener("click", () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
@@ -36,13 +37,15 @@ window.onload = function() {
         auth.signInWithEmailAndPassword(email, password)
             .then(userCredential => {
                 const user = userCredential.user;
+
+                // Affichage après login
                 loginDiv.style.display = "none";
                 logoutBtn.style.display = "block";
                 mapDiv.style.display = "block";
 
                 if(!map) map = initMap();
 
-                // --- BOUTON KML POUR ADMIN ---
+                // Bouton KML visible uniquement pour admin
                 if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                     kmlDiv.style.display = "block";
                     attachKmlListener();
@@ -59,7 +62,14 @@ window.onload = function() {
 
     // --- LOGOUT ---
     logoutBtn.addEventListener("click", () => {
-        auth.signOut().then(() => location.reload());
+        auth.signOut().then(() => {
+            // Après logout, tout est de nouveau masqué
+            loginDiv.style.display = "block";
+            logoutBtn.style.display = "none";
+            mapDiv.style.display = "none";
+            kmlDiv.style.display = "none";
+            if(map) map.eachLayer(layer => layer.remove()); // supprime les markers
+        });
     });
 
     // --- INITIALISER LA CARTE ---
@@ -90,13 +100,10 @@ window.onload = function() {
 
         const reader = new FileReader();
         reader.onload = async function(e){
-            const kmlText = e.target.result;
-            const spots = parseKML(kmlText);
-
+            const spots = parseKML(e.target.result);
             for(const spot of spots){
                 await db.collection("kml").add(spot);
             }
-
             alert(`Import terminé : ${spots.length} spots ajoutés`);
             loadSpots();
         };
@@ -106,7 +113,7 @@ window.onload = function() {
     // --- PARSER KML ---
     function parseKML(kmlText){
         const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(kmlText, "text/xml");
+        const xmlDoc = parser.parseFromString(kmlText,"text/xml");
         const placemarks = xmlDoc.getElementsByTagName("Placemark");
         const spots = [];
 
@@ -126,6 +133,11 @@ window.onload = function() {
     // --- CHARGER LES SPOTS FIRESTORE ---
     async function loadSpots(){
         if(!map) return;
+        // Supprime les markers existants avant de recharger
+        map.eachLayer(layer => {
+            if(layer instanceof L.Marker) map.removeLayer(layer);
+        });
+
         const snapshot = await db.collection("kml").get();
         snapshot.forEach(doc => {
             const data = doc.data();
