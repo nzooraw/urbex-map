@@ -5,38 +5,35 @@
     <title>Urbex Map</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-    <!-- Firebase Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-    <h1>Urbex Map</h1>
-
-    <!-- LOGIN -->
+    <!-- FORMULAIRE LOGIN -->
     <div id="login">
+        <h2>Connexion</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Mot de passe">
         <button id="loginBtn">Se connecter</button>
         <p id="loginError" style="color:red;"></p>
     </div>
 
-    <!-- BOUTON DÉCONNEXION -->
-    <button id="logoutBtn" style="display:none;">Se déconnecter</button>
+    <!-- BOUTON DECONNEXION -->
+    <button id="logoutBtn" style="display:none;">Déconnexion</button>
 
-    <!-- CARTE -->
-    <div id="map" style="width:100%; height:80vh; display:none;"></div>
+    <!-- CARTE LEAFLET -->
+    <div id="map" style="width: 100%; height: 500px; display:none;"></div>
 
-    <!-- IMPORT KML (ADMIN UNIQUEMENT) -->
-    <div id="kmlContainer" style="display:none; margin-top:10px;">
-        <h3>Importer un KML</h3>
+    <!-- BOUTON IMPORT KML (ADMIN) -->
+    <div id="kmlContainer" style="display:none; margin-top:20px;">
+        <h3>Importer un KML (Admin uniquement)</h3>
         <input type="file" id="kmlFile" accept=".kml">
         <button id="importKmlBtn">Importer KML</button>
     </div>
 
-    <!-- SCRIPT APP -->
+    <!-- SCRIPT JS -->
     <script src="app.js"></script>
 </body>
 </html>
