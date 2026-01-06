@@ -1,43 +1,167 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Urbex Map</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+window.onload = function() {
+    // --- CONFIGURATION FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
+        authDomain: "urbex-map-b907d.firebaseapp.com",
+        projectId: "urbex-map-b907d",
+        storageBucket: "urbex-map-b907d.appspot.com",
+        messagingSenderId: "91725857148",
+        appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
+    };
 
-    <!-- Firebase v8 compat -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const adminEmail = "enzocomyn@protonmail.com";
 
-    <!-- Leaflet -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    // --- ELEMENTS HTML ---
+    const loginDiv = document.getElementById("login");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const mapDiv = document.getElementById("map");
+    const kmlDiv = document.getElementById("kmlContainer");
+    const loginError = document.getElementById("loginError");
+    let map;
+    let markers = [];
 
-    <!-- app.js -->
-    <script src="app.js"></script>
-</head>
-<body>
-    <!-- FORMULAIRE LOGIN -->
-    <div id="login">
-        <h2>Connexion</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Mot de passe">
-        <button id="loginBtn">Se connecter</button>
-        <p id="loginError" style="color:red;"></p>
-    </div>
+    // --- AFFICHAGE INITIAL ---
+    loginDiv.style.display = "block";
+    logoutBtn.style.display = "none";
+    mapDiv.style.display = "none";
+    kmlDiv.style.display = "none";
 
-    <!-- BOUTON DECONNEXION -->
-    <button id="logoutBtn" style="display:none; margin-bottom:10px;">Déconnexion</button>
+    // --- LOGIN ---
+    document.getElementById("loginBtn").addEventListener("click", function() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
 
-    <!-- CARTE LEAFLET -->
-    <div id="map" style="width:100%; height:500px; display:none;"></div>
+        auth.signInWithEmailAndPassword(email, password)
+            .then(function(userCredential) {
+                const user = userCredential.user;
+                const isAdmin = user.email.trim().toLowerCase() === adminEmail.toLowerCase();
 
-    <!-- BOUTON IMPORT KML (ADMIN) -->
-    <div id="kmlContainer" style="display:none; margin-top:20px;">
-        <h3>Importer un KML (Admin uniquement)</h3>
-        <input type="file" id="kmlFile" accept=".kml">
-        <button id="importKmlBtn">Importer KML</button>
-    </div>
-</body>
-</html>
+                loginDiv.style.display = "none";
+                logoutBtn.style.display = "block";
+                mapDiv.style.display = "block";
+                kmlDiv.style.display = isAdmin ? "block" : "none";
+
+                if(!map) map = initMap();
+
+                if(isAdmin) attachKmlListener();
+
+                loadSpots(isAdmin);
+            })
+            .catch(function(error) {
+                loginError.innerText = error.message;
+            });
+    });
+
+    // --- LOGOUT ---
+    logoutBtn.addEventListener("click", function() {
+        auth.signOut().then(function() {
+            loginDiv.style.display = "block";
+            logoutBtn.style.display = "none";
+            mapDiv.style.display = "none";
+            kmlDiv.style.display = "none";
+            clearMarkers();
+        });
+    });
+
+    // --- INITIALISER LA CARTE ---
+    function initMap() {
+        const mapInstance = L.map('map').setView([48.8566, 2.3522], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(mapInstance);
+        return mapInstance;
+    }
+
+    // --- ATTACHER LE BOUTON KML ---
+    function attachKmlListener() {
+        document.getElementById("importKmlBtn").onclick = importKML;
+    }
+
+    // --- IMPORT KML ---
+    function importKML() {
+        const fileInput = document.getElementById("kmlFile");
+        if(fileInput.files.length === 0){
+            alert("Veuillez sélectionner un fichier KML");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e){
+            const spots = parseKML(e.target.result);
+            spots.forEach(function(spot){
+                db.collection("kml").add(spot);
+            });
+            alert("Import terminé : " + spots.length + " spots ajoutés");
+            loadSpots(true);
+        };
+        reader.readAsText(fileInput.files[0]);
+    }
+
+    // --- PARSER KML ---
+    function parseKML(kmlText){
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(kmlText,"text/xml");
+        const placemarks = xmlDoc.getElementsByTagName("Placemark");
+        const spots = [];
+
+        for(let i=0;i<placemarks.length;i++){
+            const p = placemarks[i];
+            const name = p.getElementsByTagName("name")[0]?.textContent || "Spot";
+            const coordText = p.getElementsByTagName("coordinates")[0]?.textContent;
+            if(!coordText) continue;
+            const coords = coordText.trim().split(",");
+            if(coords.length < 2) continue;
+            const lon = parseFloat(coords[0]);
+            const lat = parseFloat(coords[1]);
+            if(isNaN(lat) || isNaN(lon)) continue;
+            spots.push({name: name, lat: lat, lon: lon});
+        }
+
+        return spots;
+    }
+
+    // --- CHARGER LES SPOTS ---
+    function loadSpots(isAdmin = false){
+        if(!map) return;
+        clearMarkers();
+
+        db.collection("kml").get().then(function(snapshot){
+            snapshot.forEach(function(doc){
+                const data = doc.data();
+                if(typeof data.lat !== "number" || typeof data.lon !== "number") return;
+
+                const marker = L.marker([data.lat, data.lon]).addTo(map);
+                let popupText = `<b>${data.name}</b><br>Lat: ${data.lat.toFixed(6)}, Lon: ${data.lon.toFixed(6)}`;
+
+                if(isAdmin){
+                    popupText += `<br><button onclick="deleteMarker('${doc.id}')">Supprimer</button>`;
+                }
+
+                marker.bindPopup(popupText);
+                markers.push({marker: marker, docId: doc.id});
+            });
+        });
+    }
+
+    // --- SUPPRIMER UN MARKER (admin) ---
+    window.deleteMarker = function(docId){
+        if(confirm("Supprimer ce spot ?")){
+            db.collection("kml").doc(docId).delete().then(function(){
+                loadSpots(true);
+            }).catch(function(err){
+                alert("Erreur suppression : " + err.message);
+            });
+        }
+    }
+
+    // --- SUPPRIMER TOUS LES MARKERS ---
+    function clearMarkers(){
+        markers.forEach(m => map.removeLayer(m.marker));
+        markers = [];
+    }
+};
