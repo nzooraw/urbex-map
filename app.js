@@ -24,10 +24,18 @@ loginBtn.addEventListener("click", () => {
 
   auth.signInWithEmailAndPassword(email, password)
     .then(() => {
+      // Masquer le login et afficher la carte
       document.getElementById("login").style.display = "none";
       document.getElementById("map").style.display = "block";
-      document.getElementById("kmlContainer").style.display = "block";
+
+      // Initialiser la carte
       initMap();
+
+      // Afficher le bouton KML après que la carte soit prête
+      const kmlContainer = document.getElementById("kmlContainer");
+      if(kmlContainer) {
+        kmlContainer.style.display = "block";
+      }
     })
     .catch(err => {
       document.getElementById("loginError").innerText = err.message;
@@ -68,6 +76,7 @@ importBtn.addEventListener("click", () => {
     reader.readAsText(file);
 });
 
+// --- FONCTION POUR PARSER LE KML ---
 function parseKML(kmlText, map) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(kmlText, "text/xml");
