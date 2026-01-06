@@ -23,11 +23,12 @@ window.onload = function() {
     let map;
 
     // --- AFFICHAGE INITIAL ---
-    // Tout est masqué tant que l'utilisateur n'a pas cliqué sur login
     loginDiv.style.display = "block";
     logoutBtn.style.display = "none";
     mapDiv.style.display = "none";
     kmlDiv.style.display = "none";
+
+    console.log("kmlDiv =", kmlDiv); // Vérifie que l'élément existe
 
     // --- LOGIN MANUEL ---
     document.getElementById("loginBtn").addEventListener("click", () => {
@@ -63,12 +64,11 @@ window.onload = function() {
     // --- LOGOUT ---
     logoutBtn.addEventListener("click", () => {
         auth.signOut().then(() => {
-            // Après logout, tout est de nouveau masqué
             loginDiv.style.display = "block";
             logoutBtn.style.display = "none";
             mapDiv.style.display = "none";
             kmlDiv.style.display = "none";
-            if(map) map.eachLayer(layer => layer.remove()); // supprime les markers
+            if(map) map.eachLayer(layer => map.removeLayer(layer));
         });
     });
 
@@ -94,7 +94,7 @@ window.onload = function() {
     async function importKML() {
         const fileInput = document.getElementById("kmlFile");
         if(fileInput.files.length === 0){
-            alert("Veuillez sélectionner un fichier KML");
+            alert("Veuillez sélectionner un KML");
             return;
         }
 
@@ -133,7 +133,7 @@ window.onload = function() {
     // --- CHARGER LES SPOTS FIRESTORE ---
     async function loadSpots(){
         if(!map) return;
-        // Supprime les markers existants avant de recharger
+        // Supprime les markers existants
         map.eachLayer(layer => {
             if(layer instanceof L.Marker) map.removeLayer(layer);
         });
