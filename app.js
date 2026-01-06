@@ -21,6 +21,7 @@ window.onload = function() {
     const kmlDiv = document.getElementById("kmlContainer");
     const loginError = document.getElementById("loginError");
     let map;
+    let markers = []; // pour garder la référence des markers et docId
 
     // --- AFFICHAGE INITIAL ---
     loginDiv.style.display = "block";
@@ -28,47 +29,42 @@ window.onload = function() {
     mapDiv.style.display = "none";
     kmlDiv.style.display = "none";
 
-    console.log("kmlDiv =", kmlDiv); // Vérifie que l'élément existe
-
-    // --- LOGIN MANUEL ---
-    document.getElementById("loginBtn").addEventListener("click", () => {
+    // --- LOGIN ---
+    document.getElementById("loginBtn").addEventListener("click", function() {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
 
         auth.signInWithEmailAndPassword(email, password)
-            .then(userCredential => {
+            .then(function(userCredential) {
                 const user = userCredential.user;
 
-                // Affichage après login
                 loginDiv.style.display = "none";
-                logoutBtn.style.display = "block";
+                logoutBtn.style.display = "block"; // toujours visible
                 mapDiv.style.display = "block";
 
                 if(!map) map = initMap();
 
-                // Bouton KML visible uniquement pour admin
-                if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
-                    kmlDiv.style.display = "block";
-                    attachKmlListener();
-                } else {
-                    kmlDiv.style.display = "none";
-                }
+                const isAdmin = user.email.trim().toLowerCase() === adminEmail.toLowerCase();
 
-                loadSpots();
+                // Bouton KML pour admin
+                kmlDiv.style.display = isAdmin ? "block" : "none";
+                if(isAdmin) attachKmlListener();
+
+                loadSpots(isAdmin);
             })
-            .catch(err => {
-                loginError.innerText = err.message;
+            .catch(function(error) {
+                loginError.innerText = error.message;
             });
     });
 
     // --- LOGOUT ---
-    logoutBtn.addEventListener("click", () => {
-        auth.signOut().then(() => {
+    logoutBtn.addEventListener("click", function() {
+        auth.signOut().then(function() {
             loginDiv.style.display = "block";
             logoutBtn.style.display = "none";
             mapDiv.style.display = "none";
             kmlDiv.style.display = "none";
-            if(map) map.eachLayer(layer => map.removeLayer(layer));
+            clearMarkers();
         });
     });
 
@@ -86,26 +82,25 @@ window.onload = function() {
     // --- ATTACHER LE BOUTON KML ---
     function attachKmlListener() {
         const importBtn = document.getElementById("importKmlBtn");
-        importBtn.removeEventListener("click", importKML);
-        importBtn.addEventListener("click", importKML);
+        importBtn.onclick = importKML;
     }
 
     // --- IMPORT KML ---
-    async function importKML() {
+    function importKML() {
         const fileInput = document.getElementById("kmlFile");
         if(fileInput.files.length === 0){
-            alert("Veuillez sélectionner un KML");
+            alert("Veuillez sélectionner un fichier KML");
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = async function(e){
+        reader.onload = function(e){
             const spots = parseKML(e.target.result);
-            for(const spot of spots){
-                await db.collection("kml").add(spot);
-            }
-            alert(`Import terminé : ${spots.length} spots ajoutés`);
-            loadSpots();
+            spots.forEach(function(spot){
+                db.collection("kml").add(spot);
+            });
+            alert("Import terminé : " + spots.length + " spots ajoutés");
+            loadSpots(true); // reload markers admin
         };
         reader.readAsText(fileInput.files[0]);
     }
@@ -122,26 +117,54 @@ window.onload = function() {
             const name = p.getElementsByTagName("name")[0]?.textContent || "Spot";
             const coordText = p.getElementsByTagName("coordinates")[0]?.textContent;
             if(!coordText) continue;
-
-            const [lon, lat] = coordText.trim().split(",").map(Number);
-            spots.push({name, lat, lon});
+            const coords = coordText.trim().split(",");
+            if(coords.length < 2) continue;
+            const lon = parseFloat(coords[0]);
+            const lat = parseFloat(coords[1]);
+            if(isNaN(lat) || isNaN(lon)) continue;
+            spots.push({name: name, lat: lat, lon: lon});
         }
 
         return spots;
     }
 
-    // --- CHARGER LES SPOTS FIRESTORE ---
-    async function loadSpots(){
+    // --- CHARGER LES SPOTS ---
+    function loadSpots(isAdmin = false){
         if(!map) return;
-        // Supprime les markers existants
-        map.eachLayer(layer => {
-            if(layer instanceof L.Marker) map.removeLayer(layer);
-        });
+        clearMarkers();
 
-        const snapshot = await db.collection("kml").get();
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            L.marker([data.lat, data.lon]).addTo(map).bindPopup(data.name);
+        db.collection("kml").get().then(function(snapshot){
+            snapshot.forEach(function(doc){
+                const data = doc.data();
+                const marker = L.marker([data.lat, data.lon]).addTo(map);
+
+                let popupText = `<b>${data.name}</b><br>Lat: ${data.lat.toFixed(6)}, Lon: ${data.lon.toFixed(6)}`;
+                if(isAdmin){
+                    popupText += `<br><button onclick="deleteMarker('${doc.id}')">Supprimer</button>`;
+                }
+
+                marker.bindPopup(popupText);
+                markers.push({marker: marker, docId: doc.id});
+            });
         });
+    }
+
+    // --- SUPPRIMER UN MARKER (admin) ---
+    window.deleteMarker = function(docId){
+        if(confirm("Supprimer ce spot ?")){
+            db.collection("kml").doc(docId).delete().then(function(){
+                loadSpots(true);
+            }).catch(function(err){
+                alert("Erreur suppression : " + err.message);
+            });
+        }
+    }
+
+    // --- SUPPRIMER TOUS LES MARKERS ---
+    function clearMarkers(){
+        markers.forEach(m => {
+            map.removeLayer(m.marker);
+        });
+        markers = [];
     }
 };
