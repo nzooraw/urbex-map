@@ -5,250 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Urbex Map Privée</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        #map { height: 100vh; width: 100%; }
-        
-        /* -- Style Général des Boites -- */
-        .auth-box {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 2000; background: white; padding: 30px;
-            border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            text-align: center; width: 300px;
-        }
-        .auth-box input {
-            display: block; width: 100%; margin-bottom: 10px; padding: 10px;
-            box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
-        }
-        .hidden { display: none; }
-        
-        /* -- Style Panneau Admin -- */
-        #adminPanel {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 15px; display: none;
-            border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            max-width: 300px;
-        }
+    <link rel="stylesheet" href="style.css">
 
-        /* -- Info utilisateur -- */
-        #userInfo {
-            position: absolute; bottom: 10px; left: 10px; z-index: 1000;
-            background: rgba(255, 255, 255, 0.9); padding: 8px 12px;
-            border-radius: 4px; font-size: 13px; display: none;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-        
-        /* Boutons */
-        .btn { border: none; padding: 10px; cursor: pointer; border-radius: 4px; width: 100%; color: white; margin-top:5px; font-weight: bold; }
-        .btn-login { background: #007bff; }
-        .btn-signup { background: #28a745; }
-        .btn-logout { background: #dc3545; width: auto; font-size: 12px; padding: 5px 10px; margin-left: 10px;}
-        
-        /* Liens de bascule */
-        .switch-link {
-            display: block; margin-top: 15px; font-size: 0.9em; color: #007bff; cursor: pointer; text-decoration: underline;
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-    <div id="loginBox" class="auth-box">
-        <h2>🔐 Connexion</h2>
-        <input type="email" id="loginEmail" placeholder="Email">
-        <input type="password" id="loginPass" placeholder="Mot de passe">
-        <button class="btn btn-login" id="btnLogin">Se connecter</button>
-        <p id="loginError" style="color: red; font-size: 0.9em;"></p>
-        <span class="switch-link" onclick="afficherInscription()">Pas de compte ? Créer un compte</span>
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>⛔ Zone Restreinte</h1>
+            <p>Urbex Map - Accès Autorisé Uniquement</p>
+            
+            <form id="login-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Mot de passe" required>
+                <button type="submit" id="btn-login">Déverrouiller</button>
+            </form>
+            <p id="status-message"></p>
+        </div>
     </div>
 
-    <div id="signupBox" class="auth-box hidden">
-        <h2>📝 Créer un compte</h2>
-        <input type="text" id="signupPseudo" placeholder="Votre Pseudo (ex: UrbexHunter)">
-        <input type="email" id="signupEmail" placeholder="Email">
-        <input type="password" id="signupPass" placeholder="Mot de passe">
-        <button class="btn btn-signup" id="btnSignup">S'inscrire</button>
-        <p id="signupError" style="color: red; font-size: 0.9em;"></p>
-        <span class="switch-link" onclick="afficherConnexion()">Déjà un compte ? Se connecter</span>
+    <div id="app-screen">
+        <div class="top-bar">
+            <span class="title">🗺️ Carte Urbex</span>
+            <button id="btn-logout">Se déconnecter</button>
+        </div>
+
+        <div id="map"></div>
     </div>
 
-    <div id="adminPanel">
-        <h3>🕵️ Admin Zone</h3>
-        <p>Ajouter un fichier KML :</p>
-        <input type="file" id="kmlInput" accept=".kml">
-        <p id="status" style="color: blue; font-size: 0.9em; margin-bottom:0;"></p>
-    </div>
+    <script type="module" src="app.js"></script>
 
-    <div id="userInfo">
-        <span id="userDisplay">Chargement...</span>
-        <button class="btn btn-logout" id="btnLogout">Déco</button>
-    </div>
-
-    <div id="map"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // --- A. CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
-            authDomain: "urbex-map-b907d.firebaseapp.com",
-            projectId: "urbex-map-b907d",
-            storageBucket: "urbex-map-b907d.firebasestorage.app",
-            messagingSenderId: "91725857148",
-            appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // --- B. GESTION AFFICHAGE (Connexion/Inscription) ---
-        window.afficherInscription = () => {
-            document.getElementById('loginBox').classList.add('hidden');
-            document.getElementById('signupBox').classList.remove('hidden');
-        };
-        window.afficherConnexion = () => {
-            document.getElementById('signupBox').classList.add('hidden');
-            document.getElementById('loginBox').classList.remove('hidden');
-        };
-
-        // --- C. CARTE ---
-        const map = L.map('map').setView([46.603354, 1.888334], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-
-        // --- D. AUTHENTIFICATION ---
-        const ADMIN_EMAIL = "enzocomyn@protonmail.com";
-        const userInfo = document.getElementById('userInfo');
-        const adminPanel = document.getElementById('adminPanel');
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Connecté : on cache les boites de login
-                document.getElementById('loginBox').classList.add('hidden');
-                document.getElementById('signupBox').classList.add('hidden');
-                userInfo.style.display = 'block';
-                
-                // Récupérer le pseudo depuis Firestore
-                let pseudo = user.email; // Par défaut c'est l'email
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    pseudo = userDoc.data().pseudo;
-                }
-
-                document.getElementById('userDisplay').innerHTML = `Explorateur : <b>${pseudo}</b>`;
-                chargerLesSpots();
-
-                // Gestion Admin
-                if(user.email === ADMIN_EMAIL) {
-                    adminPanel.style.display = 'block';
-                    activerImportKML();
-                } else {
-                    adminPanel.style.display = 'none';
-                }
-            } else {
-                // Pas connecté
-                document.getElementById('loginBox').classList.remove('hidden');
-                userInfo.style.display = 'none';
-                adminPanel.style.display = 'none';
-            }
-        });
-
-        // 1. CONNEXION
-        document.getElementById('btnLogin').addEventListener('click', () => {
-            const email = document.getElementById('loginEmail').value.trim(); // .trim() retire les espaces
-            const pass = document.getElementById('loginPass').value;
-            signInWithEmailAndPassword(auth, email, pass)
-                .catch((e) => document.getElementById('loginError').innerText = "Erreur: " + e.message);
-        });
-
-        // 2. INSCRIPTION (AVEC PSEUDO)
-        document.getElementById('btnSignup').addEventListener('click', async () => {
-            const pseudo = document.getElementById('signupPseudo').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const pass = document.getElementById('signupPass').value;
-
-            if(pseudo.length < 3) {
-                document.getElementById('signupError').innerText = "Le pseudo est trop court !";
-                return;
-            }
-
-            try {
-                // Créer le compte Auth
-                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                const user = userCredential.user;
-
-                // Enregistrer le pseudo dans Firestore (Collection 'users')
-                await setDoc(doc(db, "users", user.uid), {
-                    pseudo: pseudo,
-                    email: email,
-                    role: (email === ADMIN_EMAIL) ? "admin" : "membre",
-                    dateCreation: new Date()
-                });
-
-                alert("Compte créé ! Bienvenue " + pseudo);
-
-            } catch (e) {
-                document.getElementById('signupError').innerText = "Erreur: " + e.message;
-            }
-        });
-
-        // 3. DÉCONNEXION
-        document.getElementById('btnLogout').addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        // --- E. IMPORT KML (Admin) ---
-        function activerImportKML() {
-            const input = document.getElementById('kmlInput');
-            const newItem = input.cloneNode(true);
-            input.parentNode.replaceChild(newItem, input);
-            newItem.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                document.getElementById('status').innerText = "Lecture...";
-                const reader = new FileReader();
-                reader.onload = function(e) { sauvegarderSpot(file.name, e.target.result); };
-                reader.readAsText(file);
-            });
-        }
-
-        async function sauvegarderSpot(nom, kmlData) {
-            try {
-                document.getElementById('status').innerText = "Envoi...";
-                await addDoc(collection(db, "spots"), {
-                    nom: nom, kml: kmlData, uploadedAt: new Date(), auteur: ADMIN_EMAIL
-                });
-                document.getElementById('status').innerText = "✅ Importé !";
-                chargerLesSpots();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('status').innerText = "❌ Erreur (Permissions)";
-            }
-        }
-
-        // --- F. CHARGEMENT CARTE ---
-        async function chargerLesSpots() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "spots"));
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if(data.kml) {
-                        const layer = omnivore.kml.parse(data.kml);
-                        layer.on('ready', function() {
-                            this.eachLayer(function(l) { l.bindPopup(`<b>${data.nom}</b>`); });
-                        });
-                        layer.addTo(map);
-                    }
-                });
-            } catch (e) { console.error("Erreur chargement:", e); }
-        }
-    </script>
 </body>
 </html>
