@@ -50,10 +50,8 @@ window.onload = function() {
         }
     }
 
-    // --- Forcer la déconnexion au chargement ---
-    auth.signOut().then(() => {
-        auth.onAuthStateChanged(handleAuthState);
-    });
+    // --- Observer l'état de connexion ---
+    auth.onAuthStateChanged(handleAuthState);
 
     // --- LOGIN ---
     document.getElementById("loginBtn").addEventListener("click", () => {
