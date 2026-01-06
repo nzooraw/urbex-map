@@ -5,6 +5,10 @@
     <title>Urbex Map</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
     <!-- FORMULAIRE DE LOGIN -->
@@ -13,24 +17,23 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Mot de passe">
         <button id="loginBtn">Se connecter</button>
-        <p id="loginError"></p>
+        <p id="loginError" style="color:red;"></p>
     </div>
 
-    <!-- BOUTON IMPORT KML -->
-    <div id="kmlContainer" style="display:none; text-align:center; margin:10px;">
+    <!-- BOUTON DÉCONNEXION -->
+    <button id="logoutBtn" style="display:none;">Se déconnecter</button>
+
+    <!-- CARTE -->
+    <div id="map" style="width:100%; height:80vh; display:none;"></div>
+
+    <!-- IMPORT KML (admin uniquement) -->
+    <div id="kmlContainer" style="display:none; margin-top:10px;">
+        <h3>Importer un KML</h3>
         <input type="file" id="kmlFile" accept=".kml">
         <button id="importKmlBtn">Importer KML</button>
     </div>
 
-    <!-- CARTE -->
-    <div id="map" style="height: 100vh; display:none;"></div>
-
-    <!-- SCRIPTS -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- SCRIPT APP -->
     <script src="app.js"></script>
 </body>
 </html>
