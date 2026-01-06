@@ -31,6 +31,50 @@ loginBtn.addEventListener("click", () => {
     });
 });
 
+// Afficher le bouton KML après login
+document.getElementById("kmlContainer").style.display = "block";
+
+const importBtn = document.getElementById("importKmlBtn");
+importBtn.addEventListener("click", () => {
+    const fileInput = document.getElementById("kmlFile");
+    if (fileInput.files.length === 0) {
+        alert("Veuillez sélectionner un fichier KML");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const text = e.target.result;
+        parseKML(text, map);
+    };
+
+    reader.readAsText(file);
+});
+
+// Fonction simple pour parser le KML et ajouter des points sur la carte
+function parseKML(kmlText, map) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(kmlText, "text/xml");
+    const placemarks = xmlDoc.getElementsByTagName("Placemark");
+
+    for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        const name = placemark.getElementsByTagName("name")[0]?.textContent || "Spot";
+        const coordText = placemark.getElementsByTagName("coordinates")[0]?.textContent;
+
+        if (!coordText) continue;
+
+        // KML coord format : lon,lat,alt
+        const [lon, lat] = coordText.trim().split(",").map(Number);
+
+        L.marker([lat, lon]).addTo(map).bindPopup(name);
+    }
+
+    alert(`Import terminé : ${placemarks.length} spots ajoutés`);
+}
+
 // --- CARTE LEAFLET ---
 function initMap() {
   const map = L.map('map').setView([48.8566, 2.3522], 5); // centre Paris
@@ -44,3 +88,4 @@ function initMap() {
   // point test
   L.marker([48.8566, 2.3522]).addTo(map).bindPopup("Spot test");
 }
+
