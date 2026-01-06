@@ -1,12 +1,13 @@
 // --- CONFIG FIREBASE ---
 // Remplace ces valeurs par celles de ton projet Firebase
 const firebaseConfig = {
-  apiKey: "TON_API_KEY",
-  authDomain: "TON_PROJET.firebaseapp.com",
-  projectId: "TON_PROJET",
-  storageBucket: "TON_PROJET.appspot.com",
-  messagingSenderId: "TON_ID",
-  appId: "TON_APP_ID"
+  apiKey: « AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU »,
+  authDomain: « urbex-map-b907d.firebaseapp.com »,
+  projectId: « urbex-map-b907d »,
+  storageBucket: « urbex-map-b907d.firebasestorage.app »,
+ messageageSenderId: « 91725857148 »,
+  appId: « 1:91725857148 :web :fa7545a9dbbd075a6be4f9"} ; Initialize Firebaseconst app = initializeApp(firebaseConfig
+
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -42,3 +43,4 @@ function initMap() {
     // point test
     L.marker([48.8566, 2.3522]).addTo(map).bindPopup("Spot test");
 }
+
