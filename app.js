@@ -16,6 +16,9 @@ window.onload = function() {
     const adminEmail = "enzocomyn@protonmail.com";
     let map;
 
+    // --- DÉCONNEXION FORCÉE AU CHARGEMENT (pour tester login) ---
+    auth.signOut().then(() => console.log("Déconnexion forcée au chargement"));
+
     // --- GÉRER L'ÉTAT DE CONNEXION ---
     auth.onAuthStateChanged(user => {
         const loginDiv = document.getElementById("login");
@@ -100,7 +103,7 @@ window.onload = function() {
                 alert(`Import terminé : ${spots.length} spots ajoutés`);
             };
             reader.readAsText(file);
-        }, {once:true}); // attach once pour éviter doublons
+        }, {once:true});
     }
 
     // --- PARSER KML ---
