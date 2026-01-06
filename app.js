@@ -1,4 +1,4 @@
-window.onload = async function() {
+window.onload = function() {
     // --- CONFIGURATION FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
@@ -16,25 +16,25 @@ window.onload = async function() {
     const adminEmail = "enzocomyn@protonmail.com";
     let map;
 
-    // --- DÉCONNEXION FORCÉE AU CHARGEMENT (pour tester le login) ---
-    await auth.signOut();
-    console.log("Déconnexion forcée terminée");
+    const loginDiv = document.getElementById("login");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const kmlDiv = document.getElementById("kmlContainer");
+
+    // --- PAS DE SESSION PERSISTANTE POUR TEST ---
+    auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+        .then(() => console.log("Session non persistante : login requis à chaque reload"))
+        .catch(err => console.error(err));
 
     // --- GÉRER L'ÉTAT DE CONNEXION ---
     auth.onAuthStateChanged(user => {
-        const loginDiv = document.getElementById("login");
-        const mapDiv = document.getElementById("map");
-        const kmlDiv = document.getElementById("kmlContainer");
-        const logoutBtn = document.getElementById("logoutBtn");
-
         if(user){
             loginDiv.style.display = "none";
-            mapDiv.style.display = "block";
             logoutBtn.style.display = "block";
+            document.getElementById("map").style.display = "block";
 
             if(!map) map = initMap();
 
-            // Bouton KML visible seulement pour admin
+            // Admin → montrer KML
             if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                 kmlDiv.style.display = "block";
                 attachKmlListener();
@@ -45,9 +45,9 @@ window.onload = async function() {
             loadSpots();
         } else {
             loginDiv.style.display = "block";
-            mapDiv.style.display = "none";
-            kmlDiv.style.display = "none";
             logoutBtn.style.display = "none";
+            document.getElementById("map").style.display = "none";
+            kmlDiv.style.display = "none";
         }
     });
 
@@ -68,7 +68,7 @@ window.onload = async function() {
     });
 
     // --- LOGOUT ---
-    document.getElementById("logoutBtn").addEventListener("click", () => {
+    logoutBtn.addEventListener("click", () => {
         auth.signOut().then(() => location.reload());
     });
 
@@ -86,11 +86,11 @@ window.onload = async function() {
     // --- ATTACHER LE BOUTON KML ---
     function attachKmlListener() {
         const importBtn = document.getElementById("importKmlBtn");
-        importBtn.removeEventListener("click", importKML); // retirer si déjà attaché
+        importBtn.removeEventListener("click", importKML); // retire si déjà attaché
         importBtn.addEventListener("click", importKML);
     }
 
-    // --- FONCTION D'IMPORT KML ---
+    // --- IMPORT KML ---
     async function importKML() {
         const fileInput = document.getElementById("kmlFile");
         if(fileInput.files.length === 0){
