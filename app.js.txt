@@ -1,0 +1,44 @@
+// --- CONFIG FIREBASE ---
+// Remplace ces valeurs par celles de ton projet Firebase
+const firebaseConfig = {
+  apiKey: "TON_API_KEY",
+  authDomain: "TON_PROJET.firebaseapp.com",
+  projectId: "TON_PROJET",
+  storageBucket: "TON_PROJET.appspot.com",
+  messagingSenderId: "TON_ID",
+  appId: "TON_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// --- LOGIN ---
+const loginBtn = document.getElementById("loginBtn");
+loginBtn.addEventListener("click", () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("map").style.display = "block";
+        initMap();
+    })
+    .catch(err => {
+        document.getElementById("loginError").innerText = err.message;
+    });
+});
+
+// --- CARTE LEAFLET ---
+function initMap() {
+    const map = L.map('map').setView([48.8566, 2.3522], 5); // Paris comme centre
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    // point test
+    L.marker([48.8566, 2.3522]).addTo(map).bindPopup("Spot test");
+}
