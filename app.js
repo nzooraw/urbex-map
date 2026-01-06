@@ -1,12 +1,12 @@
-window.onload = async function() {
+window.onload = function() {
     // --- CONFIGURATION FIREBASE ---
     const firebaseConfig = {
-      apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
-      authDomain: "urbex-map-b907d.firebaseapp.com",
-      projectId: "urbex-map-b907d",
-      storageBucket: "urbex-map-b907d.appspot.com",
-      messagingSenderId: "91725857148",
-      appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
+        apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
+        authDomain: "urbex-map-b907d.firebaseapp.com",
+        projectId: "urbex-map-b907d",
+        storageBucket: "urbex-map-b907d.appspot.com",
+        messagingSenderId: "91725857148",
+        appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -14,14 +14,15 @@ window.onload = async function() {
     const db = firebase.firestore();
     const adminEmail = "enzocomyn@protonmail.com";
 
+    // --- ELEMENTS HTML ---
     const loginDiv = document.getElementById("login");
     const logoutBtn = document.getElementById("logoutBtn");
-    const kmlDiv = document.getElementById("kmlContainer");
     const mapDiv = document.getElementById("map");
+    const kmlDiv = document.getElementById("kmlContainer");
+    const loginError = document.getElementById("loginError");
     let map;
 
-    // --- FORCER LA DÉCONNEXION AU CHARGEMENT ---
-    await auth.signOut();
+    // --- AFFICHAGE INITIAL ---
     loginDiv.style.display = "block";
     logoutBtn.style.display = "none";
     mapDiv.style.display = "none";
@@ -41,16 +42,18 @@ window.onload = async function() {
 
                 if(!map) map = initMap();
 
-                // Admin → montrer KML
+                // --- BOUTON KML POUR ADMIN ---
                 if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                     kmlDiv.style.display = "block";
                     attachKmlListener();
+                } else {
+                    kmlDiv.style.display = "none";
                 }
 
                 loadSpots();
             })
             .catch(err => {
-                document.getElementById("loginError").innerText = err.message;
+                loginError.innerText = err.message;
             });
     });
 
@@ -80,16 +83,22 @@ window.onload = async function() {
     // --- IMPORT KML ---
     async function importKML() {
         const fileInput = document.getElementById("kmlFile");
-        if(fileInput.files.length === 0){ alert("Veuillez sélectionner un fichier KML"); return; }
+        if(fileInput.files.length === 0){
+            alert("Veuillez sélectionner un fichier KML");
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = async function(e){
             const kmlText = e.target.result;
             const spots = parseKML(kmlText);
+
             for(const spot of spots){
                 await db.collection("kml").add(spot);
             }
+
             alert(`Import terminé : ${spots.length} spots ajoutés`);
-            loadSpots(); // recharge les markers sur la carte
+            loadSpots();
         };
         reader.readAsText(fileInput.files[0]);
     }
@@ -100,14 +109,17 @@ window.onload = async function() {
         const xmlDoc = parser.parseFromString(kmlText, "text/xml");
         const placemarks = xmlDoc.getElementsByTagName("Placemark");
         const spots = [];
+
         for(let i=0;i<placemarks.length;i++){
             const p = placemarks[i];
             const name = p.getElementsByTagName("name")[0]?.textContent || "Spot";
             const coordText = p.getElementsByTagName("coordinates")[0]?.textContent;
             if(!coordText) continue;
+
             const [lon, lat] = coordText.trim().split(",").map(Number);
             spots.push({name, lat, lon});
         }
+
         return spots;
     }
 
