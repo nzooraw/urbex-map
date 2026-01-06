@@ -1,4 +1,4 @@
-window.onload = function() {
+window.onload = async function() {
     // --- CONFIGURATION FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
@@ -12,44 +12,20 @@ window.onload = function() {
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-
     const adminEmail = "enzocomyn@protonmail.com";
-    let map;
 
     const loginDiv = document.getElementById("login");
     const logoutBtn = document.getElementById("logoutBtn");
     const kmlDiv = document.getElementById("kmlContainer");
+    const mapDiv = document.getElementById("map");
+    let map;
 
-    // --- PAS DE SESSION PERSISTANTE POUR TEST ---
-    auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
-        .then(() => console.log("Session non persistante : login requis à chaque reload"))
-        .catch(err => console.error(err));
-
-    // --- GÉRER L'ÉTAT DE CONNEXION ---
-    auth.onAuthStateChanged(user => {
-        if(user){
-            loginDiv.style.display = "none";
-            logoutBtn.style.display = "block";
-            document.getElementById("map").style.display = "block";
-
-            if(!map) map = initMap();
-
-            // Admin → montrer KML
-            if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
-                kmlDiv.style.display = "block";
-                attachKmlListener();
-            } else {
-                kmlDiv.style.display = "none";
-            }
-
-            loadSpots();
-        } else {
-            loginDiv.style.display = "block";
-            logoutBtn.style.display = "none";
-            document.getElementById("map").style.display = "none";
-            kmlDiv.style.display = "none";
-        }
-    });
+    // --- FORCER LA DÉCONNEXION AU CHARGEMENT ---
+    await auth.signOut();
+    loginDiv.style.display = "block";
+    logoutBtn.style.display = "none";
+    mapDiv.style.display = "none";
+    kmlDiv.style.display = "none";
 
     // --- LOGIN ---
     document.getElementById("loginBtn").addEventListener("click", () => {
@@ -58,11 +34,22 @@ window.onload = function() {
 
         auth.signInWithEmailAndPassword(email, password)
             .then(userCredential => {
-                document.getElementById("loginError").innerText = "";
-                console.log("Connecté :", userCredential.user.email);
+                const user = userCredential.user;
+                loginDiv.style.display = "none";
+                logoutBtn.style.display = "block";
+                mapDiv.style.display = "block";
+
+                if(!map) map = initMap();
+
+                // Admin → montrer KML
+                if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
+                    kmlDiv.style.display = "block";
+                    attachKmlListener();
+                }
+
+                loadSpots();
             })
             .catch(err => {
-                console.log("Erreur login :", err.message);
                 document.getElementById("loginError").innerText = err.message;
             });
     });
@@ -86,30 +73,25 @@ window.onload = function() {
     // --- ATTACHER LE BOUTON KML ---
     function attachKmlListener() {
         const importBtn = document.getElementById("importKmlBtn");
-        importBtn.removeEventListener("click", importKML); // retire si déjà attaché
+        importBtn.removeEventListener("click", importKML);
         importBtn.addEventListener("click", importKML);
     }
 
     // --- IMPORT KML ---
     async function importKML() {
         const fileInput = document.getElementById("kmlFile");
-        if(fileInput.files.length === 0){
-            alert("Veuillez sélectionner un fichier KML");
-            return;
-        }
-        const file = fileInput.files[0];
+        if(fileInput.files.length === 0){ alert("Veuillez sélectionner un fichier KML"); return; }
         const reader = new FileReader();
         reader.onload = async function(e){
             const kmlText = e.target.result;
             const spots = parseKML(kmlText);
-
             for(const spot of spots){
                 await db.collection("kml").add(spot);
             }
             alert(`Import terminé : ${spots.length} spots ajoutés`);
             loadSpots(); // recharge les markers sur la carte
         };
-        reader.readAsText(file);
+        reader.readAsText(fileInput.files[0]);
     }
 
     // --- PARSER KML ---
@@ -118,11 +100,10 @@ window.onload = function() {
         const xmlDoc = parser.parseFromString(kmlText, "text/xml");
         const placemarks = xmlDoc.getElementsByTagName("Placemark");
         const spots = [];
-
         for(let i=0;i<placemarks.length;i++){
-            const placemark = placemarks[i];
-            const name = placemark.getElementsByTagName("name")[0]?.textContent || "Spot";
-            const coordText = placemark.getElementsByTagName("coordinates")[0]?.textContent;
+            const p = placemarks[i];
+            const name = p.getElementsByTagName("name")[0]?.textContent || "Spot";
+            const coordText = p.getElementsByTagName("coordinates")[0]?.textContent;
             if(!coordText) continue;
             const [lon, lat] = coordText.trim().split(",").map(Number);
             spots.push({name, lat, lon});
