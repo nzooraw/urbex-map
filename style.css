@@ -1,24 +1,29 @@
-/* --- CONFIGURATION GLOBALE --- */
+/* =========================================
+   1. CONFIGURATION GLOBALE
+   ========================================= */
 body, html {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden; /* Empêche de scroller */
+    background-color: #111; /* Fond sombre par défaut */
+    overflow: hidden; /* Empêche de scroller la page entière */
 }
 
-/* --- ÉCRAN DE CONNEXION (VERROUILLAGE) --- */
+/* =========================================
+   2. ÉCRAN DE CONNEXION (VERROUILLAGE)
+   ========================================= */
 #login-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #111; /* Fond NOIR OPAQUE */
+    background-color: #111; /* OPAQUE : On ne voit rien derrière */
     color: white;
-    z-index: 9999; /* Toujours au-dessus de tout */
-    display: flex; /* Pour centrer le contenu */
+    z-index: 9999; /* Niveau maximum : au-dessus de tout */
+    display: flex;
     justify-content: center;
     align-items: center;
 }
@@ -36,20 +41,34 @@ body, html {
 .login-box h1 {
     font-size: 24px;
     margin-bottom: 10px;
-    color: #e74c3c; /* Rouge alerte */
+    color: #e74c3c; /* Rouge style "danger/interdit" */
 }
 
+.login-box p {
+    color: #aaa;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Champs de texte (Email / Mot de passe) */
 input {
     display: block;
-    width: 90%;
-    margin: 15px auto;
+    width: 100%; 
+    box-sizing: border-box; /* Pour que le padding ne dépasse pas */
+    margin: 15px 0;
     padding: 12px;
     border-radius: 4px;
     border: 1px solid #555;
     background: #333;
     color: white;
+    outline: none;
 }
 
+input:focus {
+    border-color: #e74c3c;
+}
+
+/* Bouton de connexion */
 #btn-login {
     background-color: #e74c3c;
     color: white;
@@ -60,6 +79,7 @@ input {
     font-weight: bold;
     border-radius: 4px;
     transition: 0.3s;
+    font-size: 16px;
 }
 
 #btn-login:hover {
@@ -68,46 +88,139 @@ input {
 
 #status-message {
     color: #ff6b6b;
-    margin-top: 10px;
-    font-size: 14px;
+    margin-top: 15px;
+    font-size: 13px;
+    min-height: 20px;
 }
 
-/* --- ÉCRAN DE L'APPLICATION --- */
+/* =========================================
+   3. ÉCRAN DE L'APPLICATION (CARTE)
+   ========================================= */
 #app-screen {
-    display: none; /* CACHÉ PAR DÉFAUT */
+    display: none; /* Caché tant qu'on n'est pas connecté */
     width: 100%;
     height: 100%;
     position: relative;
 }
 
-/* La carte prend tout l'écran */
+/* La carte prend tout l'espace */
 #map {
     width: 100%;
     height: 100%;
-    background: #333; /* Gris en attendant que la carte charge */
+    background: #222; /* Couleur de fond pendant le chargement des tuiles */
+    z-index: 1;
 }
 
-/* Barre du haut */
+/* =========================================
+   4. BARRE D'OUTILS (EN HAUT)
+   ========================================= */
 .top-bar {
     position: absolute;
     top: 10px;
     left: 10px;
     right: 10px;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(30, 30, 30, 0.95); /* Fond sombre semi-transparent */
+    color: white;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px;
     z-index: 1000; /* Par-dessus la carte */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    backdrop-filter: blur(5px); /* Effet de flou */
 }
 
-#btn-logout {
-    background: #333;
-    color: white;
+.title {
+    font-weight: bold;
+    font-size: 18px;
+    color: #ecf0f1;
+}
+
+/* Conteneur des boutons à droite */
+.controls-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Zone d'import KML */
+.kml-controls {
+    display: flex;
+    align-items: center;
+}
+
+/* Boutons génériques de la barre */
+button {
     border: none;
     padding: 8px 15px;
-    cursor: pointer;
     border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+/* Bouton Import KML (Bleu) */
+#btn-import-kml {
+    background-color: #3498db;
+    color: white;
+    margin-right: 10px;
+}
+
+#btn-import-kml:hover {
+    background-color: #2980b9;
+}
+
+/* Bouton Déconnexion (Gris/Rouge au survol) */
+#btn-logout {
+    background-color: #444;
+    color: white;
+}
+
+#btn-logout:hover {
+    background-color: #c0392b;
+}
+
+/* =========================================
+   5. PERSONNALISATION LEAFLET (CARTE)
+   ========================================= */
+
+/* Style des étiquettes (Noms des points) */
+.leaflet-tooltip.my-labels {
+    background-color: rgba(0, 0, 0, 0.8); /* Fond noir transparent */
+    border: 1px solid #444;
+    color: #fff; /* Texte blanc */
+    font-size: 11px;
+    font-weight: bold;
+    box-shadow: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+/* La petite flèche sous l'étiquette */
+.leaflet-tooltip-top:before {
+    border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Style de la popup (bulle d'info quand on clique) */
+.leaflet-popup-content-wrapper {
+    background: #222;
+    color: white;
+    border-radius: 5px;
+}
+
+.leaflet-popup-tip {
+    background: #222;
+}
+
+.leaflet-popup-content h3 {
+    margin: 0 0 5px 0;
+    color: #3498db;
+}
+
+.leaflet-popup-content p {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #ccc;
 }
