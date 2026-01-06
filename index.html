@@ -11,6 +11,19 @@
         body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { height: 100vh; width: 100%; }
         
+        /* -- Style Général des Boites -- */
+        .auth-box {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 2000; background: white; padding: 30px;
+            border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            text-align: center; width: 300px;
+        }
+        .auth-box input {
+            display: block; width: 100%; margin-bottom: 10px; padding: 10px;
+            box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+        }
+        .hidden { display: none; }
+        
         /* -- Style Panneau Admin -- */
         #adminPanel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
@@ -19,39 +32,45 @@
             max-width: 300px;
         }
 
-        /* -- Style Boite de Connexion -- */
-        #authContainer {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 2000; background: white; padding: 30px;
-            border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            text-align: center; width: 300px;
-        }
-        #authContainer input {
-            display: block; width: 100%; margin-bottom: 10px; padding: 10px;
-            box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
-        }
+        /* -- Info utilisateur -- */
         #userInfo {
             position: absolute; bottom: 10px; left: 10px; z-index: 1000;
             background: rgba(255, 255, 255, 0.9); padding: 8px 12px;
             border-radius: 4px; font-size: 13px; display: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
         
         /* Boutons */
-        .btn { border: none; padding: 10px; cursor: pointer; border-radius: 4px; width: 100%; color: white; margin-top:5px; }
+        .btn { border: none; padding: 10px; cursor: pointer; border-radius: 4px; width: 100%; color: white; margin-top:5px; font-weight: bold; }
         .btn-login { background: #007bff; }
-        .btn-signup { background: #28a745; } /* Vert pour l'inscription */
-        .btn-logout { background: #dc3545; width: auto; font-size: 12px; padding: 5px 10px; }
+        .btn-signup { background: #28a745; }
+        .btn-logout { background: #dc3545; width: auto; font-size: 12px; padding: 5px 10px; margin-left: 10px;}
+        
+        /* Liens de bascule */
+        .switch-link {
+            display: block; margin-top: 15px; font-size: 0.9em; color: #007bff; cursor: pointer; text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
-    <div id="authContainer">
-        <h2>Accès Restreint</h2>
-        <input type="email" id="emailInput" placeholder="Votre email">
-        <input type="password" id="passInput" placeholder="Mot de passe">
+    <div id="loginBox" class="auth-box">
+        <h2>🔐 Connexion</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPass" placeholder="Mot de passe">
         <button class="btn btn-login" id="btnLogin">Se connecter</button>
-        <button class="btn btn-signup" id="btnSignup">Créer un compte</button>
-        <p id="authError" style="color: red; font-size: 0.9em; margin-top: 10px;"></p>
+        <p id="loginError" style="color: red; font-size: 0.9em;"></p>
+        <span class="switch-link" onclick="afficherInscription()">Pas de compte ? Créer un compte</span>
+    </div>
+
+    <div id="signupBox" class="auth-box hidden">
+        <h2>📝 Créer un compte</h2>
+        <input type="text" id="signupPseudo" placeholder="Votre Pseudo (ex: UrbexHunter)">
+        <input type="email" id="signupEmail" placeholder="Email">
+        <input type="password" id="signupPass" placeholder="Mot de passe">
+        <button class="btn btn-signup" id="btnSignup">S'inscrire</button>
+        <p id="signupError" style="color: red; font-size: 0.9em;"></p>
+        <span class="switch-link" onclick="afficherConnexion()">Déjà un compte ? Se connecter</span>
     </div>
 
     <div id="adminPanel">
@@ -62,7 +81,7 @@
     </div>
 
     <div id="userInfo">
-        <span id="userEmailDisplay"></span>
+        <span id="userDisplay">Chargement...</span>
         <button class="btn btn-logout" id="btnLogout">Déco</button>
     </div>
 
@@ -74,7 +93,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- A. CONFIG ---
         const firebaseConfig = {
@@ -90,28 +109,43 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- B. CARTE ---
+        // --- B. GESTION AFFICHAGE (Connexion/Inscription) ---
+        window.afficherInscription = () => {
+            document.getElementById('loginBox').classList.add('hidden');
+            document.getElementById('signupBox').classList.remove('hidden');
+        };
+        window.afficherConnexion = () => {
+            document.getElementById('signupBox').classList.add('hidden');
+            document.getElementById('loginBox').classList.remove('hidden');
+        };
+
+        // --- C. CARTE ---
         const map = L.map('map').setView([46.603354, 1.888334], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-        // --- C. AUTHENTIFICATION ---
+        // --- D. AUTHENTIFICATION ---
         const ADMIN_EMAIL = "enzocomyn@protonmail.com";
-        const authContainer = document.getElementById('authContainer');
         const userInfo = document.getElementById('userInfo');
         const adminPanel = document.getElementById('adminPanel');
 
-        // Surveiller l'état de connexion
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Si connecté
-                authContainer.style.display = 'none'; // Cacher le formulaire
+                // Connecté : on cache les boites de login
+                document.getElementById('loginBox').classList.add('hidden');
+                document.getElementById('signupBox').classList.add('hidden');
                 userInfo.style.display = 'block';
-                document.getElementById('userEmailDisplay').innerText = user.email;
                 
-                console.log("Connecté :", user.email);
-                chargerLesSpots(); // Charger la carte
+                // Récupérer le pseudo depuis Firestore
+                let pseudo = user.email; // Par défaut c'est l'email
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    pseudo = userDoc.data().pseudo;
+                }
 
-                // Vérif Admin
+                document.getElementById('userDisplay').innerHTML = `Explorateur : <b>${pseudo}</b>`;
+                chargerLesSpots();
+
+                // Gestion Admin
                 if(user.email === ADMIN_EMAIL) {
                     adminPanel.style.display = 'block';
                     activerImportKML();
@@ -119,47 +153,62 @@
                     adminPanel.style.display = 'none';
                 }
             } else {
-                // Si pas connecté
-                authContainer.style.display = 'block'; // Montrer le formulaire
+                // Pas connecté
+                document.getElementById('loginBox').classList.remove('hidden');
                 userInfo.style.display = 'none';
                 adminPanel.style.display = 'none';
             }
         });
 
-        // Bouton Connexion
+        // 1. CONNEXION
         document.getElementById('btnLogin').addEventListener('click', () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
+            const email = document.getElementById('loginEmail').value.trim(); // .trim() retire les espaces
+            const pass = document.getElementById('loginPass').value;
             signInWithEmailAndPassword(auth, email, pass)
-                .catch((error) => {
-                    document.getElementById('authError').innerText = "Erreur : " + error.message;
-                });
+                .catch((e) => document.getElementById('loginError').innerText = "Erreur: " + e.message);
         });
 
-        // Bouton Inscription
-        document.getElementById('btnSignup').addEventListener('click', () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
-            createUserWithEmailAndPassword(auth, email, pass)
-                .then(() => {
-                    alert("Compte créé ! Vous êtes connecté.");
-                })
-                .catch((error) => {
-                    document.getElementById('authError').innerText = "Erreur création : " + error.message;
+        // 2. INSCRIPTION (AVEC PSEUDO)
+        document.getElementById('btnSignup').addEventListener('click', async () => {
+            const pseudo = document.getElementById('signupPseudo').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const pass = document.getElementById('signupPass').value;
+
+            if(pseudo.length < 3) {
+                document.getElementById('signupError').innerText = "Le pseudo est trop court !";
+                return;
+            }
+
+            try {
+                // Créer le compte Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // Enregistrer le pseudo dans Firestore (Collection 'users')
+                await setDoc(doc(db, "users", user.uid), {
+                    pseudo: pseudo,
+                    email: email,
+                    role: (email === ADMIN_EMAIL) ? "admin" : "membre",
+                    dateCreation: new Date()
                 });
+
+                alert("Compte créé ! Bienvenue " + pseudo);
+
+            } catch (e) {
+                document.getElementById('signupError').innerText = "Erreur: " + e.message;
+            }
         });
 
-        // Bouton Déconnexion
+        // 3. DÉCONNEXION
         document.getElementById('btnLogout').addEventListener('click', () => {
             signOut(auth);
         });
 
-        // --- D. IMPORT KML (Admin) ---
+        // --- E. IMPORT KML (Admin) ---
         function activerImportKML() {
             const input = document.getElementById('kmlInput');
             const newItem = input.cloneNode(true);
             input.parentNode.replaceChild(newItem, input);
-            
             newItem.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -184,7 +233,7 @@
             }
         }
 
-        // --- E. CHARGEMENT ---
+        // --- F. CHARGEMENT CARTE ---
         async function chargerLesSpots() {
             try {
                 const querySnapshot = await getDocs(collection(db, "spots"));
