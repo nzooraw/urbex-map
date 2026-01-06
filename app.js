@@ -1,4 +1,4 @@
-window.onload = function() {
+window.onload = async function() {
     // --- CONFIGURATION FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyDOBN0gJwIbrZFOymSwP9BnzNudubPorkU",
@@ -16,8 +16,9 @@ window.onload = function() {
     const adminEmail = "enzocomyn@protonmail.com";
     let map;
 
-    // --- DÉCONNEXION FORCÉE AU CHARGEMENT (pour tester login) ---
-    auth.signOut().then(() => console.log("Déconnexion forcée au chargement"));
+    // --- DÉCONNEXION FORCÉE AU CHARGEMENT (pour tester le login) ---
+    await auth.signOut();
+    console.log("Déconnexion forcée terminée");
 
     // --- GÉRER L'ÉTAT DE CONNEXION ---
     auth.onAuthStateChanged(user => {
@@ -85,25 +86,30 @@ window.onload = function() {
     // --- ATTACHER LE BOUTON KML ---
     function attachKmlListener() {
         const importBtn = document.getElementById("importKmlBtn");
-        importBtn.addEventListener("click", async () => {
-            const fileInput = document.getElementById("kmlFile");
-            if(fileInput.files.length === 0){
-                alert("Veuillez sélectionner un fichier KML");
-                return;
-            }
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = async function(e){
-                const kmlText = e.target.result;
-                const spots = parseKML(kmlText);
+        importBtn.removeEventListener("click", importKML); // retirer si déjà attaché
+        importBtn.addEventListener("click", importKML);
+    }
 
-                for(const spot of spots){
-                    await db.collection("kml").add(spot);
-                }
-                alert(`Import terminé : ${spots.length} spots ajoutés`);
-            };
-            reader.readAsText(file);
-        }, {once:true});
+    // --- FONCTION D'IMPORT KML ---
+    async function importKML() {
+        const fileInput = document.getElementById("kmlFile");
+        if(fileInput.files.length === 0){
+            alert("Veuillez sélectionner un fichier KML");
+            return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = async function(e){
+            const kmlText = e.target.result;
+            const spots = parseKML(kmlText);
+
+            for(const spot of spots){
+                await db.collection("kml").add(spot);
+            }
+            alert(`Import terminé : ${spots.length} spots ajoutés`);
+            loadSpots(); // recharge les markers sur la carte
+        };
+        reader.readAsText(file);
     }
 
     // --- PARSER KML ---
@@ -126,6 +132,7 @@ window.onload = function() {
 
     // --- CHARGER LES SPOTS FIRESTORE ---
     async function loadSpots(){
+        if(!map) return;
         const snapshot = await db.collection("kml").get();
         snapshot.forEach(doc => {
             const data = doc.data();
