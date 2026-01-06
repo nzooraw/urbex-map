@@ -14,6 +14,8 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+let map; // variable globale pour la carte
+
 // --- LOGIN ---
 const loginBtn = document.getElementById("loginBtn");
 loginBtn.addEventListener("click", () => {
@@ -24,6 +26,7 @@ loginBtn.addEventListener("click", () => {
     .then(() => {
       document.getElementById("login").style.display = "none";
       document.getElementById("map").style.display = "block";
+      document.getElementById("kmlContainer").style.display = "block";
       initMap();
     })
     .catch(err => {
@@ -31,9 +34,21 @@ loginBtn.addEventListener("click", () => {
     });
 });
 
-// Afficher le bouton KML après login
-document.getElementById("kmlContainer").style.display = "block";
+// --- CARTE LEAFLET ---
+function initMap() {
+  map = L.map('map').setView([48.8566, 2.3522], 5); // centre Paris
 
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  // point test
+  L.marker([48.8566, 2.3522]).addTo(map).bindPopup("Spot test");
+}
+
+// --- IMPORT KML ---
 const importBtn = document.getElementById("importKmlBtn");
 importBtn.addEventListener("click", () => {
     const fileInput = document.getElementById("kmlFile");
@@ -53,7 +68,6 @@ importBtn.addEventListener("click", () => {
     reader.readAsText(file);
 });
 
-// Fonction simple pour parser le KML et ajouter des points sur la carte
 function parseKML(kmlText, map) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(kmlText, "text/xml");
@@ -66,7 +80,6 @@ function parseKML(kmlText, map) {
 
         if (!coordText) continue;
 
-        // KML coord format : lon,lat,alt
         const [lon, lat] = coordText.trim().split(",").map(Number);
 
         L.marker([lat, lon]).addTo(map).bindPopup(name);
@@ -74,18 +87,3 @@ function parseKML(kmlText, map) {
 
     alert(`Import terminé : ${placemarks.length} spots ajoutés`);
 }
-
-// --- CARTE LEAFLET ---
-function initMap() {
-  const map = L.map('map').setView([48.8566, 2.3522], 5); // centre Paris
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(map);
-
-  // point test
-  L.marker([48.8566, 2.3522]).addTo(map).bindPopup("Spot test");
-}
-
