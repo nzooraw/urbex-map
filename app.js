@@ -9,7 +9,7 @@ window.onload = function() {
       appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
     };
 
-    // Initialisation Firebase (compat)
+    // Initialisation Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -17,44 +17,66 @@ window.onload = function() {
     let map;
     const adminEmail = "enzocomyn@protonmail.com";
 
-    // --- LOGIN ---
-    const loginBtn = document.getElementById("loginBtn");
-    loginBtn.addEventListener("click", () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .catch(err => document.getElementById("loginError").innerText = err.message);
-    });
+    // --- Fonction pour gérer l'état de connexion ---
+    function handleAuthState(user) {
+        const loginDiv = document.getElementById("login");
+        const mapDiv = document.getElementById("map");
+        const kmlDiv = document.getElementById("kmlContainer");
+        const logoutBtn = document.getElementById("logoutBtn");
 
-    // --- OBSERVER L'ÉTAT DE CONNEXION ---
-    auth.onAuthStateChanged((user) => {
         if(user){
             console.log("Utilisateur connecté :", user.email);
 
-            document.getElementById("login").style.display = "none";
-            document.getElementById("map").style.display = "block";
+            loginDiv.style.display = "none";
+            mapDiv.style.display = "block";
+            logoutBtn.style.display = "block";
 
             if(!map) map = initMap();
 
             // Afficher le bouton KML seulement pour admin
             if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
-                document.getElementById("kmlContainer").style.display = "block";
+                kmlDiv.style.display = "block";
+            } else {
+                kmlDiv.style.display = "none";
             }
 
             // Charger tous les spots depuis Firestore
             loadSpots();
+        } else {
+            loginDiv.style.display = "block";
+            mapDiv.style.display = "none";
+            kmlDiv.style.display = "none";
+            logoutBtn.style.display = "none";
         }
+    }
+
+    // --- Forcer la déconnexion au chargement ---
+    auth.signOut().then(() => {
+        auth.onAuthStateChanged(handleAuthState);
+    });
+
+    // --- LOGIN ---
+    document.getElementById("loginBtn").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        auth.signInWithEmailAndPassword(email, password)
+            .catch(err => document.getElementById("loginError").innerText = err.message);
+    });
+
+    // --- LOGOUT ---
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+        auth.signOut().then(() => location.reload());
     });
 
     // --- INITIALISER LA CARTE ---
     function initMap() {
-      const mapInstance = L.map('map').setView([48.8566, 2.3522], 5);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(mapInstance);
-      return mapInstance;
+        const mapInstance = L.map('map').setView([48.8566, 2.3522], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(mapInstance);
+        return mapInstance;
     }
 
     // --- IMPORT KML POUR ADMIN ---
@@ -69,9 +91,9 @@ window.onload = function() {
         const reader = new FileReader();
         reader.onload = async function(e){
             const kmlText = e.target.result;
-            const spots = parseKML(kmlText); // renvoie un tableau de {name, lat, lon}
+            const spots = parseKML(kmlText);
 
-            // Ajouter chaque spot dans Firestore (seul admin autorisé par règle)
+            // Ajouter chaque spot dans Firestore (seul admin peut écrire)
             for(const spot of spots){
                 await db.collection("kml").add(spot);
             }
