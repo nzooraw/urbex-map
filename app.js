@@ -9,38 +9,34 @@ window.onload = function() {
       appId: "1:91725857148:web:fa7545a9dbbd075a6be4f9"
     };
 
-    // Initialisation Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let map;
     const adminEmail = "enzocomyn@protonmail.com";
+    let map;
 
-    // --- Fonction pour gérer l'état de connexion ---
-    function handleAuthState(user) {
+    // --- GÉRER L'ÉTAT DE CONNEXION ---
+    auth.onAuthStateChanged(user => {
         const loginDiv = document.getElementById("login");
         const mapDiv = document.getElementById("map");
         const kmlDiv = document.getElementById("kmlContainer");
         const logoutBtn = document.getElementById("logoutBtn");
 
         if(user){
-            console.log("Utilisateur connecté :", user.email);
-
             loginDiv.style.display = "none";
             mapDiv.style.display = "block";
             logoutBtn.style.display = "block";
 
             if(!map) map = initMap();
 
-            // Afficher le bouton KML seulement pour admin
             if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                 kmlDiv.style.display = "block";
+                attachKmlListener();
             } else {
                 kmlDiv.style.display = "none";
             }
 
-            // Charger tous les spots depuis Firestore
             loadSpots();
         } else {
             loginDiv.style.display = "block";
@@ -48,10 +44,7 @@ window.onload = function() {
             kmlDiv.style.display = "none";
             logoutBtn.style.display = "none";
         }
-    }
-
-    // --- Observer l'état de connexion ---
-    auth.onAuthStateChanged(handleAuthState);
+    });
 
     // --- LOGIN ---
     document.getElementById("loginBtn").addEventListener("click", () => {
@@ -77,29 +70,28 @@ window.onload = function() {
         return mapInstance;
     }
 
-    // --- IMPORT KML POUR ADMIN ---
-    document.getElementById("importKmlBtn").addEventListener("click", () => {
-        const fileInput = document.getElementById("kmlFile");
-        if(fileInput.files.length === 0){
-            alert("Veuillez sélectionner un fichier KML");
-            return;
-        }
-        const file = fileInput.files[0];
-
-        const reader = new FileReader();
-        reader.onload = async function(e){
-            const kmlText = e.target.result;
-            const spots = parseKML(kmlText);
-
-            // Ajouter chaque spot dans Firestore (seul admin peut écrire)
-            for(const spot of spots){
-                await db.collection("kml").add(spot);
+    // --- IMPORT KML (admin) ---
+    function attachKmlListener() {
+        const importBtn = document.getElementById("importKmlBtn");
+        importBtn.addEventListener("click", async () => {
+            const fileInput = document.getElementById("kmlFile");
+            if(fileInput.files.length === 0){
+                alert("Veuillez sélectionner un fichier KML");
+                return;
             }
-
-            alert(`Import terminé : ${spots.length} spots ajoutés`);
-        };
-        reader.readAsText(file);
-    });
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(e){
+                const kmlText = e.target.result;
+                const spots = parseKML(kmlText);
+                for(const spot of spots){
+                    await db.collection("kml").add(spot);
+                }
+                alert(`Import terminé : ${spots.length} spots ajoutés`);
+            };
+            reader.readAsText(file);
+        }, {once:true}); // attach once pour éviter doublons
+    }
 
     // --- PARSER KML ---
     function parseKML(kmlText){
@@ -113,14 +105,13 @@ window.onload = function() {
             const name = placemark.getElementsByTagName("name")[0]?.textContent || "Spot";
             const coordText = placemark.getElementsByTagName("coordinates")[0]?.textContent;
             if(!coordText) continue;
-
             const [lon, lat] = coordText.trim().split(",").map(Number);
             spots.push({name, lat, lon});
         }
         return spots;
     }
 
-    // --- CHARGER LES SPOTS DEPUIS FIRESTORE ---
+    // --- CHARGER SPOTS FIRESTORE ---
     async function loadSpots(){
         const snapshot = await db.collection("kml").get();
         snapshot.forEach(doc => {
