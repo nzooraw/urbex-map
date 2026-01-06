@@ -30,6 +30,7 @@ window.onload = function() {
 
             if(!map) map = initMap();
 
+            // Bouton KML visible seulement pour admin
             if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                 kmlDiv.style.display = "block";
                 attachKmlListener();
@@ -50,8 +51,16 @@ window.onload = function() {
     document.getElementById("loginBtn").addEventListener("click", () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
+
         auth.signInWithEmailAndPassword(email, password)
-            .catch(err => document.getElementById("loginError").innerText = err.message);
+            .then(userCredential => {
+                document.getElementById("loginError").innerText = "";
+                console.log("Connecté :", userCredential.user.email);
+            })
+            .catch(err => {
+                console.log("Erreur login :", err.message);
+                document.getElementById("loginError").innerText = err.message;
+            });
     });
 
     // --- LOGOUT ---
@@ -70,7 +79,7 @@ window.onload = function() {
         return mapInstance;
     }
 
-    // --- IMPORT KML (admin) ---
+    // --- ATTACHER LE BOUTON KML ---
     function attachKmlListener() {
         const importBtn = document.getElementById("importKmlBtn");
         importBtn.addEventListener("click", async () => {
@@ -84,6 +93,7 @@ window.onload = function() {
             reader.onload = async function(e){
                 const kmlText = e.target.result;
                 const spots = parseKML(kmlText);
+
                 for(const spot of spots){
                     await db.collection("kml").add(spot);
                 }
@@ -111,7 +121,7 @@ window.onload = function() {
         return spots;
     }
 
-    // --- CHARGER SPOTS FIRESTORE ---
+    // --- CHARGER LES SPOTS FIRESTORE ---
     async function loadSpots(){
         const snapshot = await db.collection("kml").get();
         snapshot.forEach(doc => {
