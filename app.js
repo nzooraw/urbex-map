@@ -16,7 +16,7 @@ window.onload = function() {
     const storage = firebase.storage();
 
     let map; // variable globale pour la carte
-    const adminEmail = "enzocomyn@protonmail.com"; // email admin
+    const adminEmail = "enzocomyn@protonmail.com"; // ton email admin exact
 
     // --- LOGIN ---
     const loginBtn = document.getElementById("loginBtn");
@@ -33,15 +33,17 @@ window.onload = function() {
     // --- OBSERVER L'ÉTAT DE CONNEXION ---
     auth.onAuthStateChanged((user) => {
         if(user){
+            console.log("Utilisateur connecté :", user.email); // pour vérifier l'email exact
+
             // Masquer le login et afficher la carte
             document.getElementById("login").style.display = "none";
             document.getElementById("map").style.display = "block";
 
-            // Initialiser la carte
+            // Initialiser la carte si pas déjà fait
             if(!map) map = initMap();
 
-            // Afficher le bouton KML seulement pour l'admin
-            if(user.email === adminEmail){
+            // Afficher le bouton KML seulement pour l'admin (sécurisé)
+            if(user.email.trim().toLowerCase() === adminEmail.toLowerCase()){
                 const kmlContainer = document.getElementById("kmlContainer");
                 if(kmlContainer) kmlContainer.style.display = "block";
             }
