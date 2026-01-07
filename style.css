@@ -1,18 +1,42 @@
 /* =========================================
-   1. CONFIGURATION GLOBALE
+   1. CORE VARIABLES & RESET
    ========================================= */
-body, html {
+:root {
+    --bg-dark: #0a0a0a;
+    --bg-panel: #141414;
+    --bg-panel-transparent: rgba(20, 20, 20, 0.85);
+    /* Glass effect */
+    --accent: #4B0082;
+    /* Indigo */
+
+    /* Indigo */
+    --accent-dim: rgba(75, 0, 130, 0.3);
+    --text-main: #e0e0e0;
+    --text-muted: #888;
+    --danger: #cf2734;
+    --border: #333;
+
+    --font-stack: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body,
+html {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #111; /* Fond sombre par défaut */
-    overflow: hidden; /* Empêche de scroller la page entière */
+    font-family: var(--font-stack);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow: hidden;
 }
 
 /* =========================================
-   2. ÉCRAN DE CONNEXION (VERROUILLAGE)
+   2. LOGIN SCREEN (TACTICAL STYLE)
    ========================================= */
 #login-screen {
     position: fixed;
@@ -20,207 +44,906 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #111; /* OPAQUE : On ne voit rien derrière */
-    color: white;
-    z-index: 9999; /* Niveau maximum : au-dessus de tout */
+    background: var(--bg-dark);
+    z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
+    background-image:
+        radial-gradient(circle at 50% 50%, #1a1a1a 0%, #0a0a0a 70%);
 }
 
-.login-box {
-    background-color: #222;
+.login-container {
+    width: 360px;
     padding: 40px;
-    border-radius: 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     text-align: center;
-    box-shadow: 0 0 20px rgba(0,0,0,0.8);
-    border: 1px solid #444;
-    width: 300px;
-}
-
-.login-box h1 {
-    font-size: 24px;
-    margin-bottom: 10px;
-    color: #e74c3c; /* Rouge style "danger/interdit" */
-}
-
-.login-box p {
-    color: #aaa;
-    font-size: 14px;
-    margin-bottom: 20px;
-}
-
-/* Champs de texte (Email / Mot de passe) */
-input {
-    display: block;
-    width: 100%; 
-    box-sizing: border-box; /* Pour que le padding ne dépasse pas */
-    margin: 15px 0;
-    padding: 12px;
-    border-radius: 4px;
-    border: 1px solid #555;
-    background: #333;
-    color: white;
-    outline: none;
-}
-
-input:focus {
-    border-color: #e74c3c;
-}
-
-/* Bouton de connexion */
-#btn-login {
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    width: 100%;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 4px;
-    transition: 0.3s;
-    font-size: 16px;
-}
-
-#btn-login:hover {
-    background-color: #c0392b;
-}
-
-#status-message {
-    color: #ff6b6b;
-    margin-top: 15px;
-    font-size: 13px;
-    min-height: 20px;
-}
-
-/* =========================================
-   3. ÉCRAN DE L'APPLICATION (CARTE)
-   ========================================= */
-#app-screen {
-    display: none; /* Caché tant qu'on n'est pas connecté */
-    width: 100%;
-    height: 100%;
     position: relative;
 }
 
-/* La carte prend tout l'espace */
-#map {
+.login-container::before {
+    /* Corner decoration */
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid var(--accent);
+    border-right: 2px solid var(--accent);
+}
+
+.login-header {
+    margin-bottom: 30px;
+    color: var(--accent);
+}
+
+.login-header h1 {
+    font-size: 28px;
+    margin: 10px 0 5px;
+    letter-spacing: 2px;
+    color: #fff;
+}
+
+.login-header .subtitle {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 4px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.input-group i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.input-group input {
     width: 100%;
-    height: 100%;
-    background: #222; /* Couleur de fond pendant le chargement des tuiles */
-    z-index: 1;
+    padding: 12px 12px 12px 40px;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: #fff;
+    font-family: var(--font-stack);
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    border-color: var(--accent);
+    outline: none;
+    background: #1a1a1a;
+}
+
+#btn-login {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-stack);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+#btn-login:hover {
+    background: #fff;
+    box-shadow: 0 0 15px var(--accent);
+}
+
+.login-footer {
+    margin-top: 30px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+#status-message {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 15px;
+    min-height: 18px;
 }
 
 /* =========================================
-   4. BARRE D'OUTILS (EN HAUT)
+   3. APP & SIDEBAR LAYOUT
    ========================================= */
-.top-bar {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    background: rgba(30, 30, 30, 0.95); /* Fond sombre semi-transparent */
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    z-index: 1000; /* Par-dessus la carte */
+#app-screen {
+    display: none;
+    /* Hidden by default */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    /* Flex layout for sidebar + map */
+}
+
+/* Ensure flex display only active when visible via JS override */
+
+.sidebar {
+    width: 350px;
+    height: 100%;
+    background: var(--bg-panel-transparent);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    backdrop-filter: blur(5px); /* Effet de flou */
 }
 
-.title {
-    font-weight: bold;
+.sidebar-header .logo {
+    font-weight: 800;
     font-size: 18px;
-    color: #ecf0f1;
+    letter-spacing: 1px;
+    color: #fff;
 }
 
-/* Conteneur des boutons à droite */
-.controls-right {
+.sidebar-header .logo i {
+    color: var(--accent);
+    margin-right: 8px;
+}
+
+.user-status {
+    font-size: 10px;
+    color: var(--text-muted);
     display: flex;
     align-items: center;
+}
+
+.user-status .dot {
+    width: 6px;
+    height: 6px;
+    background: #0f0;
+    border-radius: 50%;
+    margin-right: 6px;
+    box-shadow: 0 0 5px #0f0;
+}
+
+.search-box {
+    padding: 15px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+}
+
+.search-box input,
+.search-box select {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--border);
+    padding: 10px 10px 10px 35px;
+    color: #fff;
+    border-radius: 4px;
+    appearance: none;
+    /* Remove default arrow */
+    cursor: pointer;
+}
+
+.search-box select option {
+    background: #111;
+    color: #fff;
+}
+
+.search-box i {
+    position: absolute;
+    left: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.tools-panel {
+    padding: 10px 15px;
+    display: flex;
     gap: 10px;
+    background: #0d0d0d;
+    border-bottom: 1px solid var(--border);
 }
 
-/* Zone d'import KML */
-.kml-controls {
-    display: flex;
-    align-items: center;
-}
-
-/* Boutons génériques de la barre */
-button {
-    border: none;
-    padding: 8px 15px;
+.tool-btn {
+    background: #222;
+    border: 1px solid var(--border);
+    color: #fff;
+    padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
+    flex: 1;
     transition: 0.2s;
 }
 
-/* Bouton Import KML (Bleu) */
-#btn-import-kml {
-    background-color: #3498db;
-    color: white;
-    margin-right: 10px;
+.tool-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
-#btn-import-kml:hover {
-    background-color: #2980b9;
+.tool-btn.danger:hover {
+    border-color: var(--danger);
+    color: var(--danger);
 }
 
-/* Bouton Déconnexion (Gris/Rouge au survol) */
-#btn-logout {
-    background-color: #444;
-    color: white;
-}
-
-#btn-logout:hover {
-    background-color: #c0392b;
-}
-
-/* =========================================
-   5. PERSONNALISATION LEAFLET (CARTE)
-   ========================================= */
-
-/* Style des étiquettes (Noms des points) */
-.leaflet-tooltip.my-labels {
-    background-color: rgba(0, 0, 0, 0.8); /* Fond noir transparent */
-    border: 1px solid #444;
-    color: #fff; /* Texte blanc */
+.list-header {
+    padding: 15px;
     font-size: 11px;
-    font-weight: bold;
-    box-shadow: none;
-    padding: 2px 5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.locations-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0 10px 20px;
+}
+
+/* Scrollbar styling */
+.locations-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.locations-list::-webkit-scrollbar-thumb {
+    background: #333;
     border-radius: 3px;
 }
 
-/* La petite flèche sous l'étiquette */
-.leaflet-tooltip-top:before {
-    border-top-color: rgba(0, 0, 0, 0.8);
+.location-item {
+    background: #1a1a1a;
+    border: 1px solid transparent;
+    border-left: 2px solid #333;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-/* Style de la popup (bulle d'info quand on clique) */
-.leaflet-popup-content-wrapper {
+.location-item:hover {
+    border-color: var(--border);
+    border-left-color: var(--accent);
     background: #222;
-    color: white;
-    border-radius: 5px;
+}
+
+.location-item h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #eee;
+    font-weight: 500;
+}
+
+.location-item p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.empty-state {
+    text-align: center;
+    color: #444;
+    margin-top: 30px;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* =========================================
+   4. CONTENEUR CARTE
+   ========================================= */
+.map-container {
+    flex-grow: 1;
+    position: relative;
+    background: #000;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.map-overlay-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    /* En haut à gauche du conteneur MAP */
+
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 5px 10px;
+    font-family: monospace;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    z-index: 900;
+    pointer-events: none;
+}
+
+/* =========================================
+   5. PERSONNALISATION LEAFLET
+   ========================================= */
+/* Clusters de Marqueurs */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+    background-color: rgba(10, 10, 10, 0.6) !important;
+}
+
+.marker-cluster div {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+    /* Texte blanc sur Indigo */
+    font-weight: bold;
+}
+
+/* Marqueur Carte Personnalisé */
+.custom-map-marker {
+    color: var(--accent);
+    font-size: 24px;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.8));
+    text-align: center;
+    line-height: 24px;
+}
+
+/* Infobulles */
+.leaflet-tooltip.dark-tooltip {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--accent);
+    color: #fff;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 0;
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+}
+
+.leaflet-tooltip-top:before {
+    border-top-color: var(--accent);
+}
+
+/* Popups */
+/* Popups - Thème Sombre Premium */
+.leaflet-popup-content-wrapper {
+    background: #111;
+    color: #eee;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    /* Bordure Indigo */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    padding: 0;
 }
 
 .leaflet-popup-tip {
-    background: #222;
+    background: #111;
+    border: 1px solid var(--accent);
+    border-top: none;
+    border-left: none;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.leaflet-popup-content {
+    margin: 15px;
+    line-height: 1.5;
+    min-width: 260px;
 }
 
 .leaflet-popup-content h3 {
-    margin: 0 0 5px 0;
-    color: #3498db;
+    color: #fff;
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font-stack);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .leaflet-popup-content p {
-    margin: 0 0 10px 0;
+    color: #bbb;
+    font-size: 13px;
+    margin: 0 0 8px;
+}
+
+.leaflet-popup-content strong {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.coords-display {
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 3px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    color: #888 !important;
+    font-size: 11px !important;
+}
+
+.popup-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.popup-actions .tool-btn {
+    flex: 1;
+    font-size: 12px;
+    padding: 6px;
+}
+
+.btn-gmaps {
+    flex: 2;
+    background: #1f1f1f;
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    transition: 0.2s;
+}
+
+.btn-gmaps:hover {
+    background: #2a2a2a;
+    border-color: #555;
+    color: #fff;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+    color: #666;
+    font-size: 18px;
+    top: 5px;
+    right: 5px;
+    transition: 0.2s;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+    color: #fff;
+    background: transparent;
+}
+
+/* Active Filters */
+.filter-tags-container {
+    padding: 0 15px 10px 15px;
+    margin-top: 15px;
+    /* Added spacing */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.filter-tag {
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+
+.filter-tag:hover {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: #ff4444;
+    color: #ff4444;
+}
+
+
+/* Custom Checkbox Dropdown */
+/* Custom Checkbox Dropdown */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-header {
+    padding: 15px;
+    background: #111;
+    color: #aaa;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+}
+
+.dropdown-header:hover {
+    color: #fff;
+}
+
+/* OVERRIDE: Reset global .search-box i styles */
+.search-box .custom-dropdown i {
+    position: static;
+    transform: none;
+    left: auto;
+    top: auto;
+    width: auto;
+    height: auto;
+    pointer-events: none;
+    /* Let clicks pass through */
+}
+
+/* Flex container for the label + icon */
+.dropdown-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dropdown-header span i {
+    margin: 0;
+    color: var(--accent);
+}
+
+.dropdown-content {
+    display: none;
+    /* Overlay Behavior */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    z-index: 2000;
+    background: #0d0d0d;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-top: none;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8);
+}
+
+.dropdown-content.open {
+    display: block;
+}
+
+/* Dropdown Toolbar (Select All / None) */
+.dropdown-toolbar {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    background: #111;
+}
+
+.dropdown-action-btn {
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: #888;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.dropdown-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+
+.checkbox-item {
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.1s;
     font-size: 13px;
     color: #ccc;
+    user-select: none;
+}
+
+.checkbox-item:hover {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+/* Removed input/label specific styles as they are gone */
+
+
+/* Ensure Planet Icon is visible and aligned */
+.dropdown-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dropdown-header span i {
+    margin: 0;
+    color: var(--accent);
+}
+
+/* Scrollbar for dropdown */
+.dropdown-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+
+/* SIDEBAR COLLAPSE & TOGGLE */
+.sidebar.collapsed {
+    width: 0 !important;
+    padding: 0 !important;
+    border-right: none;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* Toggle Button (Vertical Centered Tab) */
+#btn-toggle-sidebar {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    z-index: 1100;
+
+    background: var(--bg-panel);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-left: none;
+    /* Looks attached to sidebar edge (which is technically behind it, or rather, the map starts at left=0 relative to map-container) */
+
+    padding: 20px 6px;
+    /* High and narrow */
+    cursor: pointer;
+    border-radius: 0 8px 8px 0;
+    /* Rounded right corners */
+    font-size: 14px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-toggle-sidebar:hover {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 0 15px var(--accent-dim);
+}
+
+
+/* =========================================
+   MODALS
+   ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    /* Darker backdrop */
+    backdrop-filter: blur(8px);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: #141414;
+    border: 1px solid var(--border);
+    padding: 25px;
+    width: 450px;
+    max-width: 90%;
+    border-radius: 8px;
+    /* More rounded */
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+    position: relative;
+    color: #eee;
+}
+
+/* Specific Admin Modal Style (The "Page Container") */
+#admin-modal .modal-box {
+    width: 600px;
+    /* Wider, page-like */
+    border: 1px solid var(--accent);
+    /* Indigo Border */
+    box-shadow: 0 0 50px rgba(75, 0, 130, 0.2);
+    /* Indigo Glow */
+    background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+}
+
+.modal-box h2 {
+    margin-top: 0;
+    color: var(--accent);
+    font-size: 18px;
+    /* Larger title */
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-box .input-group {
+    margin-bottom: 15px;
+}
+
+
+/* Specific Edit Modal Style */
+#edit-modal .modal-box {
+    width: 600px;
+    background: #111;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+}
+
+.edit-box h3 {
+    margin-top: 0;
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.edit-box label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.edit-box input[type="text"],
+.edit-box textarea {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    padding: 10px;
+    color: #fff;
+    border-radius: 4px;
+    font-family: inherit;
+    margin-bottom: 15px;
+    transition: 0.2s;
+}
+
+.edit-box input[type="text"]:focus,
+.edit-box textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 10px var(--accent-dim);
+}
+
+.photo-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.photo-input-row input {
+    margin-bottom: 0;
+}
+
+.photos-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    min-height: 60px;
+    border: 1px dashed #333;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.photos-list img {
+    height: 50px;
+    width: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+.photos-list .empty-photos {
+    color: #555;
+    font-size: 11px;
+    margin: auto;
+}
+
+/* POPUP CAROUSEL */
+.popup-gallery {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    /* Fixed height for consistency */
+    background: #000;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-gallery img {
+    max-width: 100%;
+    max-height: 100%;
+    display: none;
+    /* Hidden by default */
+}
+
+.popup-gallery img.active {
+    display: block;
+    /* Only active shown */
+}
+
+.carousel-controls {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.carousel-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 10px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: 0.2s;
+}
+
+.carousel-btn:hover {
+    background: var(--accent);
 }
