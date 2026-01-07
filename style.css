@@ -945,5 +945,103 @@ html {
 }
 
 .carousel-btn:hover {
-    background: var(--accent);
-}
+
+    /* =========================================
+   6. RESPONSIVE DESIGN (MOBILE / TABLETTE)
+   ========================================= */
+
+    @media (max-width: 768px) {
+
+        /* --- GLOBALS --- */
+        body {
+            font-size: 14px;
+        }
+
+        /* --- LOGIN SCREEN --- */
+        .login-container {
+            width: 90%;
+            padding: 25px;
+        }
+
+        .login-header h1 {
+            font-size: 24px;
+        }
+
+        /* --- LAYOUT DUO (SIDEBAR + MAP) --- */
+        #app-screen {
+            position: relative;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 85%;
+            /* Laisse une petite marge pour cliquer sur la map et fermer */
+            max-width: 350px;
+            z-index: 2000;
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.8);
+            transition: transform 0.3s ease;
+        }
+
+        /* État replié sur mobile : on le sort de l'écran par la gauche */
+        .sidebar.collapsed {
+            width: 85% !important;
+            /* Garder la largeur mais déplacer */
+            transform: translateX(-100%);
+            border: none;
+            opacity: 1;
+            /* On gère la visibilité par transform */
+        }
+
+        /* Bouton Toggle Mobile */
+        #btn-toggle-sidebar {
+            padding: 15px 12px;
+            font-size: 18px;
+            /* Plus gros pour le doigt */
+        }
+
+        /* --- CARTE --- */
+        /* Décaler les contrôles Leaflet pour ne pas être sous le bouton toggle ou header */
+        .leaflet-top.leaflet-left {
+            top: 60px;
+            /* Si besoin */
+        }
+
+        /* Cacher l'overlay de coordonnées souris sur mobile (pas de souris) */
+        .map-overlay-info {
+            display: none;
+        }
+
+        /* --- MODALES --- */
+        .modal-box,
+        #admin-modal .modal-box {
+            width: 95% !important;
+            margin: 10px;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            width: 100%;
+            margin: 0;
+        }
+
+        /* --- POPUP MAP --- */
+        .leaflet-popup-content {
+            min-width: 220px;
+            margin: 10px;
+        }
+
+        .popup-gallery {
+            height: 120px;
+            /* Plus petit */
+        }
+    }

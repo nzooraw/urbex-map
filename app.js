@@ -992,21 +992,26 @@ if (btnCreateUser) {
                 if (adminCheckEl) adminCheckEl.checked = false;
                 if (canAddCheckEl) canAddCheckEl.checked = false;
 
-                // Close modal
-                adminModal.classList.remove('active');
+                if (adminModal) adminModal.classList.remove('active');
 
                 // Cleanup
-                signOut(secondaryAuth); // Just in case
-                deleteApp(secondaryApp);
+                if (secondaryAuth) await signOut(secondaryAuth);
+                if (secondaryApp) await deleteApp(secondaryApp);
 
-            } catch (e) {
-                console.error(e);
-                showModal("Erreur Création", e.message);
-                if (secondaryApp) deleteApp(secondaryApp);
+            } catch (error) {
+                console.error("Erreur création utilisateur :", error);
+
+                // Ensure UI is unlocked even on error
+                if (adminModal) adminModal.classList.remove('active');
+                if (secondaryApp) await deleteApp(secondaryApp).catch(console.error);
+
+                showModal("Erreur", `Échec création : ${error.message}`);
             }
         }
     });
 }
+
+
 
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
