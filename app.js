@@ -257,22 +257,27 @@ const modalBtnConfirm = document.getElementById('modal-btn-confirm');
 const modalBtnCancel = document.getElementById('modal-btn-cancel');
 
 // Aide pour afficher le modal en remplacement de Alert/Confirm
+// Aide pour afficher le modal en remplacement de Alert/Confirm
 function showModal(title, message, isConfirm = false) {
     return new Promise((resolve) => {
+        // Re-query elements strictly to avoid stale references after replaceChild
+        const btnConfirm = document.getElementById('modal-btn-confirm');
+        const btnCancel = document.getElementById('modal-btn-cancel');
+
         modalTitle.textContent = title;
         modalMessage.innerHTML = message;
 
-        modalBtnCancel.style.display = isConfirm ? 'block' : 'none';
-        modalBtnConfirm.textContent = isConfirm ? 'Confirmer' : 'OK';
+        btnCancel.style.display = isConfirm ? 'block' : 'none';
+        btnConfirm.textContent = isConfirm ? 'Confirmer' : 'OK';
 
         modal.classList.add('active');
 
-        // Nettoyage des anciens écouteurs pour éviter déclenchements multiples
-        const newConfirm = modalBtnConfirm.cloneNode(true);
-        modalBtnConfirm.parentNode.replaceChild(newConfirm, modalBtnConfirm);
+        // Nettoyage des anciens écouteurs via clônage
+        const newConfirm = btnConfirm.cloneNode(true);
+        btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
 
-        const newCancel = modalBtnCancel.cloneNode(true);
-        modalBtnCancel.parentNode.replaceChild(newCancel, modalBtnCancel);
+        const newCancel = btnCancel.cloneNode(true);
+        btnCancel.parentNode.replaceChild(newCancel, btnCancel);
 
         // Ré-assignation des écouteurs
         newConfirm.addEventListener('click', () => {
