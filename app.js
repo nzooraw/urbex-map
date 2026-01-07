@@ -1022,7 +1022,19 @@ loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
         .catch(err => statusMessage.textContent = "ACCÈS REFUSÉ");
+    signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+        .catch(err => statusMessage.textContent = "ACCÈS REFUSÉ");
 });
+
+if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+        signOut(auth).then(() => {
+            console.log("Déconnexion réussie");
+        }).catch((error) => {
+            console.error("Erreur déconnexion:", error);
+        });
+    });
+}
 
 
 // --- 13. SIDEBAR TOGGLE ---
