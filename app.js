@@ -72,6 +72,14 @@ onAuthStateChanged(auth, async (user) => {
             console.error(e);
         }
 
+        // MAJ Pseudo UI
+        const displayNameEl = document.getElementById('user-display-name');
+        if (displayNameEl) {
+            // Pseudo > Email > 'Utilisateur'
+            const pseudo = userPermissions.pseudo || user.email.split('@')[0] || 'Explorateur';
+            displayNameEl.textContent = pseudo.toUpperCase();
+        }
+
         loginScreen.style.display = 'none';
         appScreen.style.display = 'flex';
 

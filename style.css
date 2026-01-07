@@ -754,6 +754,11 @@ html {
     justify-content: center;
 }
 
+/* Force Custom Modal (Alerts/Confirms) to be ABOVE Admin Modal */
+#custom-modal {
+    z-index: 3200 !important;
+}
+
 .modal-overlay.active {
     display: flex;
 }
